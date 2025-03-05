@@ -12,6 +12,7 @@ import { SignIn } from "./pages/auth/sign-in";
 import { SignUp } from "./pages/auth/sign-up";
 
 import { Error } from "./pages/error";
+import Products from "./pages/app/products";
 
 export const router = createBrowserRouter([
   {
@@ -22,7 +23,7 @@ export const router = createBrowserRouter([
       { path: "/overview", element: <Overview /> },
       { path: "/dashboard", element: <Dashboard /> },
       { path: "/orders", element: <Orders /> },
-      // { path: "/products", element: <Products /> },
+      { path: "/products", element: <Products /> },
       // { path: "/custommers", element: <Customers /> },
       // { path: "/users", element: <User /> },
       // { path: "/support", element: <Support /> },

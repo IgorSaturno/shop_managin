@@ -1,12 +1,69 @@
+"use client";
+
+import {
+  TableHead,
+  TableRow,
+  Table,
+  TableHeader,
+  TableBody,
+} from "@/components/ui/table";
+
 import { Helmet } from "react-helmet-async";
+import { ProductTableFilters } from "./components/product-table-filters";
+import { Pagination } from "@/components/pagination";
+import { ProductTableRow } from "./components/product-table-row";
+import { useState } from "react";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import ProductCreateDialog from "./components/product-create-dialog.tsx";
 
 export default function Products() {
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+
   return (
     <>
       <Helmet title="produtos" />
       <div className="flex flex-col gap-4">
         <h1 className="text-3xl font-bold tracking-tight">Produtos</h1>
-        <div className="space-y-2.5"></div>
+        <div className="flex justify-between">
+          <ProductTableFilters />
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger asChild>
+              <Button variant="secondary">
+                <Plus className="mr-2 h-4 w-4" />
+                Adicionar Produto
+              </Button>
+            </DialogTrigger>
+            <ProductCreateDialog onClose={() => setIsCreateOpen(false)} />
+          </Dialog>
+        </div>
+        <div className="space-y-2.5">
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[64px]"></TableHead>
+                  <TableHead className="w-[100px]">Imagem</TableHead>
+                  <TableHead className="w-[140px]">Identificador</TableHead>
+                  <TableHead>Nome</TableHead>
+                  <TableHead className="w-[180px]">Categoria</TableHead>
+                  <TableHead className="w-[180px]">Sub marca</TableHead>
+                  <TableHead className="w-[120px]">Estoque</TableHead>
+                  <TableHead className="w-[140px]">Preço</TableHead>
+                  <TableHead className="w-[164px]">Status</TableHead>
+                  <TableHead className="w-[132px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Array.from({ length: 10 }).map((_, i) => {
+                  return <ProductTableRow key={i} />;
+                })}
+              </TableBody>
+            </Table>
+          </div>
+          <Pagination pageIndex={0} totalCount={105} perPage={10} />
+        </div>
       </div>
     </>
   );
