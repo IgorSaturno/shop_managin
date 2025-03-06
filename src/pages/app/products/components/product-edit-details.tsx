@@ -5,7 +5,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -14,42 +14,40 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ImageUpload } from "@/components/ImageUpload";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  getProducts,
-  saveCategory,
-  saveProduct,
-  saveSubBrand,
-} from "@/lib/localStorage";
+import { updateProduct } from "@/lib/localStorage";
 import { Product } from "@/types/Product";
-import { Button } from "@/components/ui/button";
+import { ImageUpload } from "@/components/ImageUpload";
 
-export default function ProductCreateDialog({
-  onClose,
-  refresh,
-}: {
+interface ProductEditDetailsProps {
+  product: Product;
   onClose: () => void;
-  refresh: (products: Product[]) => void;
-}) {
-  const [name, setName] = useState("");
-  const [price, setPrice] = useState("");
-  const [stock, setStock] = useState("");
-  const [category, setCategory] = useState("");
-  const [subBrand, setSubBrand] = useState("");
-  const [description, setDescription] = useState("");
-  const [images, setImages] = useState<(File | string)[]>([]);
+}
+
+export default function ProductEditDetails({
+  product,
+  onClose,
+}: ProductEditDetailsProps) {
+  const [name, setName] = useState(product.name);
+  const [price, setPrice] = useState(product.price.toString());
+  const [stock, setStock] = useState(product.stock.toString());
+  const [category, setCategory] = useState(product.category);
+  const [subBrand, setSubBrand] = useState(product.subBrand);
+  const [description, setDescription] = useState(product.description);
+  const [images, setImages] = useState<(File | string)[]>(
+    product.images || [product.imageUrl],
+  ); // Estado para as imagens
   const [status, setStatus] = useState<"Disponível" | "Indisponível">(
-    "Disponível",
+    product.status,
   );
 
-  const handleCreate = () => {
+  const handleSave = () => {
     const imageUrls = images.map((image) =>
       typeof image === "string" ? image : URL.createObjectURL(image),
     ); // Gera URLs temporárias para as imagens
 
-    const newProduct: Product = {
-      id: Math.random().toString(36).substr(2, 9), // Gera um ID aleatório
+    const updatedProduct: Product = {
+      ...product,
       name,
       price: parseFloat(price),
       stock: parseInt(stock),
@@ -61,19 +59,14 @@ export default function ProductCreateDialog({
       status,
     };
 
-    console.log("Produto criado:", newProduct);
-
-    saveProduct(newProduct);
-    saveCategory(category);
-    saveSubBrand(subBrand);
-    refresh(getProducts());
-    onClose();
+    updateProduct(updatedProduct); // Atualiza o produto no localStorage
+    onClose(); // Fecha o modal
   };
 
   return (
     <DialogContent>
       <DialogHeader>
-        <DialogTitle>Adicionar Produto</DialogTitle>
+        <DialogTitle>Editar Produto</DialogTitle>
       </DialogHeader>
 
       <div className="space-y-4">
@@ -112,15 +105,15 @@ export default function ProductCreateDialog({
               <SelectValue placeholder="Selecione o status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Disponivel">Disponível</SelectItem>
-              <SelectItem value="Indisponivel">Indisponível</SelectItem>
+              <SelectItem value="Disponível">Disponível</SelectItem>
+              <SelectItem value="Indisponível">Indisponível</SelectItem>
             </SelectContent>
           </Select>
         </Label>
-        {/* Categoria - Select */}
+
         <Label className="flex flex-col gap-2">
           <span className="text-sm font-medium">Categoria</span>
-          <Select onValueChange={setCategory}>
+          <Select value={category} onValueChange={setCategory}>
             <SelectTrigger>
               <SelectValue placeholder="Selecione a categoria" />
             </SelectTrigger>
@@ -130,15 +123,14 @@ export default function ProductCreateDialog({
               <SelectItem value="dildo">Dildo</SelectItem>
               <SelectItem value="intimatehealth">Saúde íntima</SelectItem>
               <SelectItem value="accessories">Acessórios</SelectItem>
-              <SelectItem value="cosmétics">Cosméticos</SelectItem>
+              <SelectItem value="cosmetics">Cosméticos</SelectItem>
             </SelectContent>
           </Select>
         </Label>
 
-        {/* Sub marca - Select */}
         <Label className="flex flex-col gap-2">
           <span className="text-sm font-medium">Sub marca</span>
-          <Select onValueChange={setSubBrand}>
+          <Select value={subBrand} onValueChange={setSubBrand}>
             <SelectTrigger>
               <SelectValue placeholder="Selecione a sub marca" />
             </SelectTrigger>
@@ -184,11 +176,11 @@ export default function ProductCreateDialog({
               const newImages = images.filter((_, i) => i !== index); // Remove a imagem pelo índice
               setImages(newImages);
             }}
-            initialImages={images}
+            initialImages={images} // Passa as imagens atuais
           />
         </Label>
 
-        <Button onClick={handleCreate}>Adicionar Produto</Button>
+        <Button onClick={handleSave}>Salvar Alterações</Button>
       </div>
     </DialogContent>
   );

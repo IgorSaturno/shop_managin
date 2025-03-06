@@ -5,21 +5,49 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Product } from "@/types/Product";
+import { getProducts } from "@/lib/localStorage";
 
-const productImages = [
-  "https://via.placeholder.com/300x300?text=Imagem+1",
-  "https://via.placeholder.com/300x300?text=Imagem+2",
-  "https://via.placeholder.com/300x300?text=Imagem+3",
-  "https://via.placeholder.com/300x300?text=Imagem+4",
-];
+interface ProductDetailsProps {
+  productId: string;
+}
 
-export function ProductDetails() {
-  const [selectedImage, setSelectedImage] = useState(productImages[0]);
+export function ProductDetails({ productId }: ProductDetailsProps) {
+  const [product, setProduct] = useState<Product | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string>(""); // Estado para a imagem selecionada
+
+  const updateProductDetails = () => {
+    const products = getProducts();
+    const foundProduct = products.find((p) => p.id === productId);
+    setProduct(foundProduct || null);
+  };
+
+  useEffect(() => {
+    updateProductDetails(); // Busca o produto quando o componente é montado
+
+    // Atualiza quando houver mudanças no localStorage
+    window.addEventListener("storage", updateProductDetails);
+    return () => {
+      window.removeEventListener("storage", updateProductDetails);
+    };
+  }, [productId]);
+
+  // Atualiza a imagem selecionada quando o produto é carregado
+  useEffect(() => {
+    if (product) {
+      setSelectedImage(product.imageUrl);
+    }
+  }, [product]);
+
+  if (!product) return <p>Produto não encontrado.</p>;
+
+  const productImages = product.images || [product.imageUrl];
+
   return (
     <DialogContent>
       <DialogHeader>
-        <DialogTitle>Produto: Dildo arco-iris</DialogTitle>
+        <DialogTitle>Produto: {product.name}</DialogTitle>
         <DialogDescription>Detalhes do produto</DialogDescription>
       </DialogHeader>
 
@@ -28,31 +56,35 @@ export function ProductDetails() {
           <TableBody>
             <TableRow>
               <TableCell className="text-muted-foreground">ID</TableCell>
-              <TableCell className="text-right">12345-abcde</TableCell>
+              <TableCell className="text-right">{product.id}</TableCell>
             </TableRow>
-
             <TableRow>
               <TableCell className="text-muted-foreground">Categoria</TableCell>
-              <TableCell className="text-right">Dildo</TableCell>
+              <TableCell className="text-right">{product.category}</TableCell>
             </TableRow>
-
             <TableRow>
               <TableCell className="text-muted-foreground">Preço</TableCell>
-              <TableCell className="text-right">R$ 79,90</TableCell>
+              <TableCell className="text-right">R$ {product.price}</TableCell>
             </TableRow>
-
             <TableRow>
               <TableCell className="text-muted-foreground">Estoque</TableCell>
-              <TableCell className="text-right">25 unidades</TableCell>
+              <TableCell className="text-right">
+                {product.stock} unidades
+              </TableCell>
             </TableRow>
-
             <TableRow>
               <TableCell className="text-muted-foreground">Status</TableCell>
               <TableCell className="flex justify-end">
                 <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-green-500" />
+                  <span
+                    className={`h-2 w-2 rounded-full ${
+                      product.status === "Disponível"
+                        ? "bg-green-500"
+                        : "bg-red-500"
+                    }`}
+                  />
                   <span className="font-medium text-muted-foreground">
-                    Disponível
+                    {product.status}
                   </span>
                 </div>
               </TableCell>
@@ -62,10 +94,7 @@ export function ProductDetails() {
 
         <div>
           <h3 className="text-lg font-semibold">Descrição</h3>
-          <p className="text-muted-foreground">
-            Camiseta preta de algodão premium, confortável e estilosa para
-            qualquer ocasião.
-          </p>
+          <p className="text-muted-foreground">{product.description}</p>
         </div>
 
         <div className="flex flex-col items-center">

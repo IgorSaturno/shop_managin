@@ -2,18 +2,24 @@ import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { UploadCloud, Trash } from "lucide-react";
 
+interface ImageUploadProps {
+  onUpload: (files: (File | string)[]) => void;
+  onRemove: (index: number) => void; // Nova prop para notificar a remoção de imagens
+  initialImages?: (File | string)[];
+}
+
 export function ImageUpload({
   onUpload,
-}: {
-  onUpload: (files: File[]) => void;
-}) {
-  const [images, setImages] = useState<File[]>([]);
+  onRemove,
+  initialImages = [],
+}: ImageUploadProps) {
+  const [images, setImages] = useState<(File | string)[]>(initialImages);
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
       const newImages = [...images, ...acceptedFiles].slice(0, 4); // Limita a 4 imagens
       setImages(newImages);
-      onUpload(newImages);
+      onUpload(newImages); // Notifica o componente pai sobre o upload
     },
     [images, onUpload],
   );
@@ -21,7 +27,8 @@ export function ImageUpload({
   const removeImage = (index: number) => {
     const newImages = images.filter((_, i) => i !== index);
     setImages(newImages);
-    onUpload(newImages);
+    onUpload(newImages); // Notifica o componente pai sobre a remoção
+    onRemove(index); // Notifica o componente pai sobre o índice removido
   };
 
   const { getRootProps, getInputProps } = useDropzone({
@@ -47,10 +54,12 @@ export function ImageUpload({
 
       {/* Prévia das imagens */}
       <div className="grid grid-cols-4 gap-2">
-        {images.map((file, index) => (
+        {images.map((image, index) => (
           <div key={index} className="relative h-20 w-20">
             <img
-              src={URL.createObjectURL(file)}
+              src={
+                typeof image === "string" ? image : URL.createObjectURL(image)
+              }
               alt="Preview"
               className="h-full w-full rounded-md object-cover"
             />

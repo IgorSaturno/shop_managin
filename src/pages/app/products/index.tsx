@@ -1,29 +1,35 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
-  TableHead,
-  TableRow,
   Table,
   TableHeader,
   TableBody,
+  TableHead,
+  TableRow,
 } from "@/components/ui/table";
-
 import { Helmet } from "react-helmet-async";
 import { ProductTableFilters } from "./components/product-table-filters";
 import { Pagination } from "@/components/pagination";
 import { ProductTableRow } from "./components/product-table-row";
-import { useState } from "react";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { Product } from "@/types/Product";
+import { getProducts } from "@/lib/localStorage";
 import ProductCreateDialog from "./components/product-create-dialog.tsx";
 
 export default function Products() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    setProducts(getProducts());
+  }, []);
 
   return (
     <>
-      <Helmet title="produtos" />
+      <Helmet title="Produtos" />
       <div className="flex flex-col gap-4">
         <h1 className="text-3xl font-bold tracking-tight">Produtos</h1>
         <div className="flex justify-between">
@@ -35,7 +41,10 @@ export default function Products() {
                 Adicionar Produto
               </Button>
             </DialogTrigger>
-            <ProductCreateDialog onClose={() => setIsCreateOpen(false)} />
+            <ProductCreateDialog
+              onClose={() => setIsCreateOpen(false)}
+              refresh={setProducts}
+            />
           </Dialog>
         </div>
         <div className="space-y-2.5">
@@ -56,13 +65,17 @@ export default function Products() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {Array.from({ length: 10 }).map((_, i) => {
-                  return <ProductTableRow key={i} />;
-                })}
+                {products.map((product) => (
+                  <ProductTableRow
+                    key={product.id}
+                    product={product}
+                    refresh={setProducts}
+                  />
+                ))}
               </TableBody>
             </Table>
           </div>
-          <Pagination pageIndex={0} totalCount={105} perPage={10} />
+          <Pagination pageIndex={0} totalCount={products.length} perPage={10} />
         </div>
       </div>
     </>
