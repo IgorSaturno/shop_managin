@@ -73,3 +73,12 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Evite interferência do Chrome */
+.react-dropzone-active {
+  pointer-events: none !important;
+}
+
+.react-dropzone-active * {
+  pointer-events: auto !important;
+}

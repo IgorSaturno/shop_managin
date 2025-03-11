@@ -1,41 +1,41 @@
-import { Label } from '@radix-ui/react-label'
-import { Helmet } from 'react-helmet-async'
-import { useForm } from 'react-hook-form'
-import { toast } from 'sonner'
-import { z } from 'zod'
+import { Helmet } from "react-helmet-async";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
 
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const updateUser = z.object({
   username: z.string().min(3).max(20),
   email: z.string().email(),
   phone: z.string().min(10).max(15),
-})
+});
 
-type UpdateUser = z.infer<typeof updateUser>
+type UpdateUser = z.infer<typeof updateUser>;
 
 export function User() {
   const {
     register,
     handleSubmit,
     formState: { isSubmitting },
-  } = useForm<UpdateUser>()
+  } = useForm<UpdateUser>();
 
   async function handleUpdateUser(data: UpdateUser) {
     try {
-      console.log(data)
+      console.log(data);
 
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      toast.success('Dados de usuário atualizados.', {
+      toast.success("Dados de usuário atualizados.", {
         action: {
-          label: 'Reenviar',
+          label: "Reenviar",
           onClick: () => handleUpdateUser(data),
         },
-      })
+      });
     } catch {
-      toast.error('Erro ao tentar atualizar dados.')
+      toast.error("Erro ao tentar atualizar dados.");
     }
   }
 
@@ -46,7 +46,7 @@ export function User() {
         <div className="border-b py-3">
           <h1 className="text-xl font-semibold">Profile</h1>
           <p className="text-sm">
-            É assim que outras pessoas verão você no site.{' '}
+            É assim que outras pessoas verão você no site.{" "}
           </p>
         </div>
         <div>
@@ -58,13 +58,13 @@ export function User() {
               <Label htmlFor="username" className="text-md font-semibold">
                 Username
               </Label>
-              <Input id="username" type="text" {...register('username')} />
+              <Input id="username" type="text" {...register("username")} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email" className="text-md font-semibold">
                 Email
               </Label>
-              <Input id="email" type="email" {...register('email')} />
+              <Input id="email" type="email" {...register("email")} />
             </div>
 
             <Button disabled={isSubmitting} className="" type="submit">
@@ -74,5 +74,5 @@ export function User() {
         </div>
       </div>
     </>
-  )
+  );
 }

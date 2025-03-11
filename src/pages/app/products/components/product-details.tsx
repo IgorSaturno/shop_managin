@@ -17,6 +17,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
   const [product, setProduct] = useState<Product | null>(null);
   const [selectedImage, setSelectedImage] = useState<string>(""); // Estado para a imagem selecionada
 
+  // Função para buscar e atualizar os detalhes do produto
   const updateProductDetails = () => {
     const products = getProducts();
     const foundProduct = products.find((p) => p.id === productId);
@@ -26,13 +27,21 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
   useEffect(() => {
     updateProductDetails(); // Busca o produto quando o componente é montado
 
-    // Atualiza quando houver mudanças no localStorage
-    window.addEventListener("storage", updateProductDetails);
+    const handleStorageChange = () => {
+      updateProductDetails();
+    };
+
+    // Adiciona um listener para o evento 'storage'
+    window.addEventListener("storage", handleStorageChange);
+
+    // Adiciona um listener para o evento 'localStorageChange' (custom)
+    window.addEventListener("localStorageChange", handleStorageChange);
+
     return () => {
-      window.removeEventListener("storage", updateProductDetails);
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("localStorageChange", handleStorageChange);
     };
   }, [productId]);
-
   // Atualiza a imagem selecionada quando o produto é carregado
   useEffect(() => {
     if (product) {
@@ -101,7 +110,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
           <img
             src={selectedImage}
             alt="Produto"
-            className="h-64 w-64 rounded-md shadow-md"
+            className="h-64 w-64 rounded-md object-cover shadow-md"
           />
 
           {/* Miniaturas das imagens */}
@@ -111,7 +120,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                 key={index}
                 src={img}
                 alt={`Imagem ${index + 1}`}
-                className={`h-16 w-16 cursor-pointer rounded-md border-2 ${
+                className={`h-16 w-16 cursor-pointer rounded-md border-2 object-cover ${
                   selectedImage === img
                     ? "border-blue-500"
                     : "border-transparent"

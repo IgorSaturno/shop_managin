@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -14,94 +14,215 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { updateProduct } from "@/lib/localStorage";
-import { Product } from "@/types/Product";
 import { ImageUpload } from "@/components/ImageUpload";
+import { Textarea } from "@/components/ui/textarea";
+import { Product } from "@/types/Product";
+import { Button } from "@/components/ui/button";
+import {
+  updateProduct,
+  getProducts,
+  getCategories,
+  getSubBrands,
+} from "@/lib/localStorage";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 interface ProductEditDetailsProps {
   product: Product;
   onClose: () => void;
+  refresh: (products: Product[]) => void;
 }
 
 export default function ProductEditDetails({
   product,
   onClose,
+  refresh,
 }: ProductEditDetailsProps) {
-  const [name, setName] = useState(product.name);
-  const [price, setPrice] = useState(product.price.toString());
-  const [stock, setStock] = useState(product.stock.toString());
-  const [category, setCategory] = useState(product.category);
-  const [subBrand, setSubBrand] = useState(product.subBrand);
-  const [description, setDescription] = useState(product.description);
-  const [images, setImages] = useState<(File | string)[]>(
-    product.images || [product.imageUrl],
-  ); // Estado para as imagens
-  const [status, setStatus] = useState<"Disponível" | "Indisponível">(
-    product.status,
-  );
+  const [editedProduct, setEditedProduct] = useState<Product>({ ...product });
+  const [editedImages, setEditedImages] = useState<(File | string)[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [subBrands, setSubBrands] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSave = () => {
-    const imageUrls = images.map((image) =>
-      typeof image === "string" ? image : URL.createObjectURL(image),
-    ); // Gera URLs temporárias para as imagens
+  // Inicialização dos estados
+  useEffect(() => {
+    setEditedProduct({ ...product });
+    setEditedImages([...product.images]);
+    setCategories(getCategories());
+    setSubBrands(getSubBrands());
+  }, [product]);
 
-    const updatedProduct: Product = {
-      ...product,
-      name,
-      price: parseFloat(price),
-      stock: parseInt(stock),
-      category,
-      subBrand,
-      description,
-      imageUrl: imageUrls[0] || "https://via.placeholder.com/150", // Usa a primeira imagem ou uma imagem padrão
-      images: imageUrls, // Inclui todas as imagens no array
-      status,
-    };
+  // Conversão de arquivo para Base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
+  };
 
-    updateProduct(updatedProduct); // Atualiza o produto no localStorage
-    onClose(); // Fecha o modal
+  // Atualização de imagens
+  const handleImageUpdate = async (files: (File | string)[]) => {
+    try {
+      setIsLoading(true);
+
+      const processedImages = await Promise.all(
+        files.map(async (img) => {
+          if (typeof img === "string") return img; // Mantém Base64 existentes
+
+          // Converte novos arquivos para Base64
+          return new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target?.result as string);
+            reader.readAsDataURL(img);
+          });
+        }),
+      );
+
+      setEditedImages(processedImages);
+    } catch (error) {
+      toast.error("Erro ao processar imagens");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Validação de campos
+  const validateFields = (): boolean => {
+    if (!editedProduct.name.trim()) {
+      toast.error("Nome do produto é obrigatório");
+      return false;
+    }
+
+    if (isNaN(editedProduct.price)) {
+      toast.error("Preço inválido");
+      return false;
+    }
+
+    if (editedProduct.price < 0) {
+      toast.error("O preço não pode ser negativo");
+      return false;
+    }
+
+    if (isNaN(editedProduct.stock)) {
+      toast.error("Estoque inválido");
+      return false;
+    }
+
+    if (editedProduct.stock < 0) {
+      toast.error("O estoque não pode ser negativo");
+      return false;
+    }
+
+    return true;
+  };
+
+  // Salvamento das alterações
+  const handleSave = async () => {
+    if (!validateFields()) return;
+
+    try {
+      setIsLoading(true);
+
+      // Processamento final das imagens
+      const processedImages = await Promise.all(
+        editedImages.map(async (img) => {
+          if (typeof img === "string") return img;
+          return await fileToBase64(img);
+        }),
+      );
+
+      const updatedProduct: Product = {
+        ...editedProduct,
+        price: Number(editedProduct.price),
+        stock: Number(editedProduct.stock),
+        images: processedImages,
+        imageUrl: processedImages[0] || "https://via.placeholder.com/150",
+        category: editedProduct.category.trim() || "Sem categoria",
+        subBrand: editedProduct.subBrand.trim() || "Sem marca",
+      };
+
+      updateProduct(updatedProduct);
+      refresh(getProducts());
+      toast.success("Produto atualizado com sucesso");
+      onClose();
+    } catch (error) {
+      console.error("Erro ao salvar:", error);
+      toast.error("Falha ao atualizar produto");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <DialogContent>
+    <DialogContent className="max-w-2xl">
       <DialogHeader>
         <DialogTitle>Editar Produto</DialogTitle>
+        <DialogDescription>
+          Faça as alterações necessárias nos campos abaixo
+        </DialogDescription>
       </DialogHeader>
 
       <div className="space-y-4">
-        <Label className="flex flex-col gap-2">
-          <span className="text-sm font-medium">Nome do Produto</span>
-          <Input value={name} onChange={(e) => setName(e.target.value)} />
-        </Label>
-
-        <Label className="flex flex-col gap-2">
-          <span className="text-sm font-medium">Preço</span>
+        {/* Campo Nome */}
+        <div className="space-y-1">
+          <Label htmlFor="productName">Nome do Produto</Label>
           <Input
-            type="number"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
+            id="productName"
+            value={editedProduct.name}
+            onChange={(e) =>
+              setEditedProduct({ ...editedProduct, name: e.target.value })
+            }
           />
-        </Label>
+        </div>
 
-        <Label className="flex flex-col gap-2">
-          <span className="text-sm font-medium">Estoque</span>
-          <Input
-            type="number"
-            value={stock}
-            onChange={(e) => setStock(e.target.value)}
-          />
-        </Label>
+        {/* Preço e Estoque */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <Label htmlFor="productPrice">Preço (R$)</Label>
+            <Input
+              id="productPrice"
+              type="number"
+              min="0"
+              step="0.01"
+              value={editedProduct.price}
+              onChange={(e) =>
+                setEditedProduct({
+                  ...editedProduct,
+                  price: Number(e.target.value),
+                })
+              }
+            />
+          </div>
 
-        <Label className="flex flex-col gap-2">
-          <span className="text-sm font-medium">Status</span>
+          <div className="space-y-1">
+            <Label htmlFor="productStock">Estoque</Label>
+            <Input
+              id="productStock"
+              type="number"
+              min="0"
+              value={editedProduct.stock}
+              onChange={(e) =>
+                setEditedProduct({
+                  ...editedProduct,
+                  stock: Number(e.target.value),
+                })
+              }
+            />
+          </div>
+        </div>
+
+        {/* Status */}
+        <div className="space-y-1">
+          <Label htmlFor="productStatus">Status</Label>
           <Select
-            value={status}
+            value={editedProduct.status}
             onValueChange={(value: "Disponível" | "Indisponível") =>
-              setStatus(value)
+              setEditedProduct({ ...editedProduct, status: value })
             }
           >
-            <SelectTrigger>
+            <SelectTrigger id="productStatus">
               <SelectValue placeholder="Selecione o status" />
             </SelectTrigger>
             <SelectContent>
@@ -109,78 +230,98 @@ export default function ProductEditDetails({
               <SelectItem value="Indisponível">Indisponível</SelectItem>
             </SelectContent>
           </Select>
-        </Label>
+        </div>
 
-        <Label className="flex flex-col gap-2">
-          <span className="text-sm font-medium">Categoria</span>
-          <Select value={category} onValueChange={setCategory}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione a categoria" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="fetish">Fetiche</SelectItem>
-              <SelectItem value="vibrators">Vibradores</SelectItem>
-              <SelectItem value="dildo">Dildo</SelectItem>
-              <SelectItem value="intimatehealth">Saúde íntima</SelectItem>
-              <SelectItem value="accessories">Acessórios</SelectItem>
-              <SelectItem value="cosmetics">Cosméticos</SelectItem>
-            </SelectContent>
-          </Select>
-        </Label>
+        {/* Categoria e Submarca */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <Label htmlFor="productCategory">Categoria</Label>
+            <Select
+              value={editedProduct.category}
+              onValueChange={(value) =>
+                setEditedProduct({ ...editedProduct, category: value })
+              }
+            >
+              <SelectTrigger id="productCategory">
+                <SelectValue placeholder="Selecione a categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {cat}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-        <Label className="flex flex-col gap-2">
-          <span className="text-sm font-medium">Sub marca</span>
-          <Select value={subBrand} onValueChange={setSubBrand}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione a sub marca" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="asos">ásos</SelectItem>
-              <SelectItem value="biosex">BioSex</SelectItem>
-              <SelectItem value="dermosex">Dermosex</SelectItem>
-              <SelectItem value="femme">Femme</SelectItem>
-              <SelectItem value="govibes">Go Vibes</SelectItem>
-              <SelectItem value="goplay">Go Play</SelectItem>
-              <SelectItem value="hotsentidos">Hot Sentidos</SelectItem>
-              <SelectItem value="ingrid">Igrid Guimarães</SelectItem>
-              <SelectItem value="lubrisex">Lubrisex</SelectItem>
-              <SelectItem value="seduction">Seduction</SelectItem>
-              <SelectItem value="sensevibe">Sensevibe</SelectItem>
-              <SelectItem value="sweetvibe">Sweet Vibe</SelectItem>
-              <SelectItem value="sexcleaner">SexCleaner</SelectItem>
-              <SelectItem value="thesecret">The Secret</SelectItem>
-            </SelectContent>
-          </Select>
-        </Label>
+          <div className="space-y-1">
+            <Label htmlFor="productSubBrand">Sub Marca</Label>
+            <Select
+              value={editedProduct.subBrand}
+              onValueChange={(value) =>
+                setEditedProduct({ ...editedProduct, subBrand: value })
+              }
+            >
+              <SelectTrigger id="productSubBrand">
+                <SelectValue placeholder="Selecione a sub marca" />
+              </SelectTrigger>
+              <SelectContent>
+                {subBrands.map((brand) => (
+                  <SelectItem key={brand} value={brand}>
+                    {brand}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
 
-        <Label className="flex flex-col gap-2">
-          <span className="text-sm font-medium">Descrição</span>
+        {/* Descrição */}
+        <div className="space-y-1">
+          <Label htmlFor="productDescription">Descrição</Label>
           <Textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Digite a descrição do produto..."
+            id="productDescription"
+            value={editedProduct.description}
+            onChange={(e) =>
+              setEditedProduct({
+                ...editedProduct,
+                description: e.target.value,
+              })
+            }
             className="min-h-[100px]"
           />
-        </Label>
+        </div>
 
-        <Label className="flex flex-col gap-2">
-          <span className="text-sm font-medium">
-            Imagens do Produto (Máx. 4)
-          </span>
+        {/* Upload de Imagens */}
+        <div className="space-y-1">
+          <Label>Imagens do Produto (Máx. 4)</Label>
           <ImageUpload
-            onUpload={(files) => {
-              const newImages = [...images, ...files].slice(0, 4); // Limita a 4 imagens
-              setImages(newImages);
-            }}
+            onUpload={handleImageUpdate}
             onRemove={(index) => {
-              const newImages = images.filter((_, i) => i !== index); // Remove a imagem pelo índice
-              setImages(newImages);
+              setEditedImages((prev) => prev.filter((_, i) => i !== index));
             }}
-            initialImages={images} // Passa as imagens atuais
+            initialImages={editedImages}
+            disabled={isLoading}
           />
-        </Label>
+        </div>
 
-        <Button onClick={handleSave}>Salvar Alterações</Button>
+        {/* Botões de Ação */}
+        <div className="mt-6 flex justify-end gap-2">
+          <Button variant="outline" onClick={onClose} disabled={isLoading}>
+            Cancelar
+          </Button>
+          <Button onClick={handleSave} disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Salvando...
+              </>
+            ) : (
+              "Salvar Alterações"
+            )}
+          </Button>
+        </div>
       </div>
     </DialogContent>
   );

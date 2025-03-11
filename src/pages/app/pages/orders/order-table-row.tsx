@@ -1,11 +1,10 @@
-import { DialogTrigger } from '@radix-ui/react-dialog'
-import { ArrowRight, Search, X } from 'lucide-react'
+import { ArrowRight, Search, X } from "lucide-react";
 
-import { Button } from '@/components/ui/button'
-import { Dialog } from '@/components/ui/dialog'
-import { TableCell, TableRow } from '@/components/ui/table'
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import { TableCell, TableRow } from "@/components/ui/table";
 
-import { OrderDetails } from './order-details'
+import { OrderDetails } from "./order-details";
 
 // export interface OrderTableRowProps {}
 
@@ -48,5 +47,5 @@ export function OrderTableRow() {
         </Button>
       </TableCell>
     </TableRow>
-  )
+  );
 }

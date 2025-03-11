@@ -1,12 +1,13 @@
 export interface Product {
   id: string;
   name: string;
+  price: number; // Garantir que seja sempre number
+  stock: number;
   category: string;
   subBrand: string;
-  stock: number;
-  price: number;
   description: string;
-  status: "Disponível" | "Indisponível";
   imageUrl: string;
   images: string[];
+  status: "Disponível" | "Indisponível";
+  createdAt: string;
 }

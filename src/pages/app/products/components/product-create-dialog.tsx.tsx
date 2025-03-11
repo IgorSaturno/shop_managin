@@ -1,11 +1,11 @@
 import { useState } from "react";
 import {
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -16,92 +16,166 @@ import {
 } from "@/components/ui/select";
 import { ImageUpload } from "@/components/ImageUpload";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  getProducts,
-  saveCategory,
-  saveProduct,
-  saveSubBrand,
-} from "@/lib/localStorage";
-import { Product } from "@/types/Product";
 import { Button } from "@/components/ui/button";
+import { Product } from "@/types/Product";
+import { saveProduct, getProducts } from "@/lib/localStorage";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
+
+interface ProductCreateDialogProps {
+  onClose: () => void;
+  refresh: (products: Product[]) => void;
+  categories: string[];
+  subBrands: string[];
+}
 
 export default function ProductCreateDialog({
   onClose,
   refresh,
-}: {
-  onClose: () => void;
-  refresh: (products: Product[]) => void;
-}) {
+  categories,
+  subBrands,
+}: ProductCreateDialogProps) {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("");
   const [category, setCategory] = useState("");
   const [subBrand, setSubBrand] = useState("");
   const [description, setDescription] = useState("");
-  const [images, setImages] = useState<(File | string)[]>([]);
+  const [images, setImages] = useState<File[]>([]);
   const [status, setStatus] = useState<"Disponível" | "Indisponível">(
     "Disponível",
   );
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleCreate = () => {
-    const imageUrls = images.map((image) =>
-      typeof image === "string" ? image : URL.createObjectURL(image),
-    ); // Gera URLs temporárias para as imagens
+  const validateFields = () => {
+    if (!name.trim()) {
+      toast.error("Nome do produto é obrigatório");
+      return false;
+    }
 
-    const newProduct: Product = {
-      id: Math.random().toString(36).substr(2, 9), // Gera um ID aleatório
-      name,
-      price: parseFloat(price),
-      stock: parseInt(stock),
-      category,
-      subBrand,
-      description,
-      imageUrl: imageUrls[0] || "https://via.placeholder.com/150", // Usa a primeira imagem ou uma imagem padrão
-      images: imageUrls, // Inclui todas as imagens no array
-      status,
-    };
+    const priceNumber = parseFloat(price);
+    if (isNaN(priceNumber)) {
+      toast.error("Preço inválido");
+      return false;
+    }
 
-    console.log("Produto criado:", newProduct);
+    if (priceNumber < 0) {
+      toast.error("O preço não pode ser negativo");
+      return false;
+    }
 
-    saveProduct(newProduct);
-    saveCategory(category);
-    saveSubBrand(subBrand);
-    refresh(getProducts());
-    onClose();
+    const stockNumber = parseInt(stock);
+    if (isNaN(stockNumber)) {
+      toast.error("Estoque inválido");
+      return false;
+    }
+
+    if (stockNumber < 0) {
+      toast.error("O estoque não pode ser negativo");
+      return false;
+    }
+
+    if (!category) {
+      toast.error("Selecione uma categoria");
+      return false;
+    }
+
+    if (!subBrand) {
+      toast.error("Selecione uma sub marca");
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleCreate = async () => {
+    if (!validateFields()) return;
+
+    try {
+      setIsLoading(true);
+
+      // Converter TODAS as imagens para Base64
+      const imagePromises = images.map((file) => {
+        return new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.readAsDataURL(file);
+        });
+      });
+
+      const imageUrls = await Promise.all(imagePromises);
+
+      const newProduct: Product = {
+        id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+        name: name.trim(),
+        price: parseFloat(price),
+        stock: parseInt(stock),
+        category: category.trim(),
+        subBrand: subBrand.trim(),
+        description: description.trim(),
+        imageUrl: imageUrls[0] || "https://via.placeholder.com/150",
+        images: imageUrls,
+        status,
+        createdAt: new Date().toISOString(),
+      };
+
+      saveProduct(newProduct);
+      refresh(getProducts());
+      onClose();
+    } catch (error) {
+      console.error("Erro ao criar produto:", error);
+      toast.error("Falha ao criar produto");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <DialogContent>
       <DialogHeader>
-        <DialogTitle>Adicionar Produto</DialogTitle>
+        <DialogTitle>Adicionar Novo Produto</DialogTitle>
+        <DialogDescription>
+          Preencha os campos para criar um produto
+        </DialogDescription>
       </DialogHeader>
 
       <div className="space-y-4">
-        <Label className="flex flex-col gap-2">
-          <span className="text-sm font-medium">Nome do Produto</span>
-          <Input value={name} onChange={(e) => setName(e.target.value)} />
-        </Label>
-
-        <Label className="flex flex-col gap-2">
-          <span className="text-sm font-medium">Preço</span>
+        <div className="space-y-1">
+          <Label>Nome do Produto*</Label>
           <Input
-            type="number"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Digite o nome do produto"
           />
-        </Label>
+        </div>
 
-        <Label className="flex flex-col gap-2">
-          <span className="text-sm font-medium">Estoque</span>
-          <Input
-            type="number"
-            value={stock}
-            onChange={(e) => setStock(e.target.value)}
-          />
-        </Label>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <Label>Preço (R$)*</Label>
+            <Input
+              type="number"
+              step="0.01"
+              min="0"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              placeholder="0,00"
+            />
+          </div>
 
-        <Label className="flex flex-col gap-2">
-          <span className="text-sm font-medium">Status</span>
+          <div className="space-y-1">
+            <Label>Estoque*</Label>
+            <Input
+              type="number"
+              min="0"
+              value={stock}
+              onChange={(e) => setStock(e.target.value)}
+              placeholder="Quantidade em estoque"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <Label>Status*</Label>
           <Select
             value={status}
             onValueChange={(value: "Disponível" | "Indisponível") =>
@@ -112,83 +186,78 @@ export default function ProductCreateDialog({
               <SelectValue placeholder="Selecione o status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Disponivel">Disponível</SelectItem>
-              <SelectItem value="Indisponivel">Indisponível</SelectItem>
+              <SelectItem value="Disponível">Disponível</SelectItem>
+              <SelectItem value="Indisponível">Indisponível</SelectItem>
             </SelectContent>
           </Select>
-        </Label>
-        {/* Categoria - Select */}
-        <Label className="flex flex-col gap-2">
-          <span className="text-sm font-medium">Categoria</span>
-          <Select onValueChange={setCategory}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione a categoria" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="fetish">Fetiche</SelectItem>
-              <SelectItem value="vibrators">Vibradores</SelectItem>
-              <SelectItem value="dildo">Dildo</SelectItem>
-              <SelectItem value="intimatehealth">Saúde íntima</SelectItem>
-              <SelectItem value="accessories">Acessórios</SelectItem>
-              <SelectItem value="cosmétics">Cosméticos</SelectItem>
-            </SelectContent>
-          </Select>
-        </Label>
+        </div>
 
-        {/* Sub marca - Select */}
-        <Label className="flex flex-col gap-2">
-          <span className="text-sm font-medium">Sub marca</span>
-          <Select onValueChange={setSubBrand}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione a sub marca" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="asos">ásos</SelectItem>
-              <SelectItem value="biosex">BioSex</SelectItem>
-              <SelectItem value="dermosex">Dermosex</SelectItem>
-              <SelectItem value="femme">Femme</SelectItem>
-              <SelectItem value="govibes">Go Vibes</SelectItem>
-              <SelectItem value="goplay">Go Play</SelectItem>
-              <SelectItem value="hotsentidos">Hot Sentidos</SelectItem>
-              <SelectItem value="ingrid">Igrid Guimarães</SelectItem>
-              <SelectItem value="lubrisex">Lubrisex</SelectItem>
-              <SelectItem value="seduction">Seduction</SelectItem>
-              <SelectItem value="sensevibe">Sensevibe</SelectItem>
-              <SelectItem value="sweetvibe">Sweet Vibe</SelectItem>
-              <SelectItem value="sexcleaner">SexCleaner</SelectItem>
-              <SelectItem value="thesecret">The Secret</SelectItem>
-            </SelectContent>
-          </Select>
-        </Label>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <Label>Categoria*</Label>
+            <Select onValueChange={setCategory} value={category}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {cat}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-        <Label className="flex flex-col gap-2">
-          <span className="text-sm font-medium">Descrição</span>
+          <div className="space-y-1">
+            <Label>Sub Marca*</Label>
+            <Select onValueChange={setSubBrand} value={subBrand}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a sub marca" />
+              </SelectTrigger>
+              <SelectContent>
+                {subBrands.map((brand) => (
+                  <SelectItem key={brand} value={brand}>
+                    {brand}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <Label>Descrição</Label>
           <Textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Digite a descrição do produto..."
+            placeholder="Descreva o produto..."
             className="min-h-[100px]"
           />
-        </Label>
+        </div>
 
-        <Label className="flex flex-col gap-2">
-          <span className="text-sm font-medium">
-            Imagens do Produto (Máx. 4)
-          </span>
+        <div className="space-y-1">
+          <Label>Imagens do Produto (Máx. 4)</Label>
           <ImageUpload
-            onUpload={(files) => {
-              const newImages = [...images, ...files].slice(0, 4); // Limita a 4 imagens
-              setImages(newImages);
-            }}
-            onRemove={(index) => {
-              const newImages = images.filter((_, i) => i !== index); // Remove a imagem pelo índice
-              setImages(newImages);
-            }}
-            initialImages={images}
+            onUpload={(files) => setImages(files.slice(0, 4))}
+            onRemove={(index) =>
+              setImages((prev) => prev.filter((_, i) => i !== index))
+            }
+            initialImages={[]}
+            disabled={isLoading}
           />
-        </Label>
+        </div>
 
-        <Button onClick={handleCreate}>Adicionar Produto</Button>
+        <Button onClick={handleCreate} disabled={isLoading} className="w-full">
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Criando Produto...
+            </>
+          ) : (
+            "Adicionar Produto"
+          )}
+        </Button>
       </div>
     </DialogContent>
   );
