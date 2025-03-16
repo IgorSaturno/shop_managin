@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/dialog";
 import { saveCategory, saveSubBrand } from "@/lib/localStorage";
 import { toast } from "sonner";
+import { Label } from "@/components/ui/label";
+import { TagsInput } from "@/components/TagsInput";
 
 export function ProductTableFilters({
   onFilter,
@@ -32,6 +34,7 @@ export function ProductTableFilters({
     category: string;
     subBrand: string;
     status: string;
+    tags: string[];
   }) => void;
   categories: string[];
   setCategories: (categories: string[]) => void;
@@ -50,6 +53,7 @@ export function ProductTableFilters({
 
   const [idFilter, setIdFilter] = useState("");
   const [nameFilter, setNameFilter] = useState("");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   // Atualiza filtros quando qualquer valor muda
   useEffect(() => {
@@ -150,6 +154,7 @@ export function ProductTableFilters({
     category: selectedCategory,
     subBrand: selectedSubBrand,
     status: selectedStatus,
+    tags: selectedTags,
   });
 
   const handleFilter = () => {
@@ -168,6 +173,7 @@ export function ProductTableFilters({
       category: "all",
       subBrand: "all",
       status: "all",
+      tags: [],
     });
     toast.success("Filtros resetados");
   };
@@ -198,6 +204,8 @@ export function ProductTableFilters({
           value={nameFilter}
           onChange={(e) => setNameFilter(e.target.value)}
         />
+
+        <TagsInput initialTags={selectedTags} onTagsChange={setSelectedTags} />
 
         {/* Filtro por Categoria */}
         <div className="flex gap-2">

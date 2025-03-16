@@ -16,6 +16,8 @@ import { Product } from "@/types/Product";
 import { getProducts, removeProduct } from "@/lib/localStorage";
 import { showToast } from "@/components/toast";
 
+const FALLBACK_IMAGE = "/placeholder-image.svg";
+
 interface ProductTableRowProps {
   product: Product;
   refresh: (products: Product[]) => void;
@@ -61,16 +63,13 @@ export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
       {/* Imagem Principal */}
       <TableCell className="sm:w-[100px]">
         <img
-          src={
-            product.imageUrl.startsWith("data:image")
-              ? product.imageUrl
-              : "https://via.placeholder.com/150"
-          }
+          src={product.imageUrl || FALLBACK_IMAGE}
           alt={product.name}
           className="h-10 w-10 rounded-md object-cover"
           onError={(e) => {
-            (e.target as HTMLImageElement).src =
-              "https://via.placeholder.com/150";
+            const target = e.target as HTMLImageElement;
+            target.src = FALLBACK_IMAGE;
+            target.onerror = null; // Impede loop
           }}
         />
       </TableCell>
@@ -85,6 +84,18 @@ export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
       </TableCell>
       <TableCell className="hidden text-muted-foreground sm:table-cell sm:w-[180px]">
         {product.subBrand || "Sem marca"}
+      </TableCell>
+      <TableCell className="hidden sm:table-cell">
+        <div className="flex flex-wrap gap-1">
+          {product.tags?.map((tag) => (
+            <span
+              key={tag}
+              className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600"
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
       </TableCell>
       <TableCell className="font-medium sm:w-[120px]">
         {product.stock ?? 0} unidades

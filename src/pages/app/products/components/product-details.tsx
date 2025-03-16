@@ -9,6 +9,8 @@ import { useEffect, useState } from "react";
 import { Product } from "@/types/Product";
 import { getProducts } from "@/lib/localStorage";
 
+const FALLBACK_IMAGE = "/placeholder-image.svg";
+
 interface ProductDetailsProps {
   productId: string;
 }
@@ -45,13 +47,17 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
   // Atualiza a imagem selecionada quando o produto é carregado
   useEffect(() => {
     if (product) {
-      setSelectedImage(product.imageUrl);
+      setSelectedImage(product.imageUrl || FALLBACK_IMAGE);
     }
   }, [product]);
 
   if (!product) return <p>Produto não encontrado.</p>;
 
-  const productImages = product.images || [product.imageUrl];
+  // Filtra imagens válidas (Modificado)
+  const productImages = (product?.images || [])
+    .filter((img) => typeof img === "string" && img.length > 0)
+    .concat(product?.imageUrl || FALLBACK_IMAGE)
+    .filter((v, i, a) => a.indexOf(v) === i); // Remove duplicatas
 
   return (
     <DialogContent>
@@ -70,6 +76,25 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
             <TableRow>
               <TableCell className="text-muted-foreground">Categoria</TableCell>
               <TableCell className="text-right">{product.category}</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell className="text-muted-foreground">Marca</TableCell>
+              <TableCell className="text-right">{product.subBrand}</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell className="text-muted-foreground">Tags</TableCell>
+              <TableCell className="text-right">
+                <div className="flex flex-wrap gap-1">
+                  {product.tags?.map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </TableCell>
             </TableRow>
             <TableRow>
               <TableCell className="text-muted-foreground">Preço</TableCell>
@@ -111,6 +136,10 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
             src={selectedImage}
             alt="Produto"
             className="h-64 w-64 rounded-md object-cover shadow-md"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
+              (e.target as HTMLImageElement).onerror = null;
+            }}
           />
 
           {/* Miniaturas das imagens */}
@@ -126,6 +155,10 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                     : "border-transparent"
                 }`}
                 onClick={() => setSelectedImage(img)}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
+                  (e.target as HTMLImageElement).onerror = null;
+                }}
               />
             ))}
           </div>

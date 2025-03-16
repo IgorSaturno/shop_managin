@@ -5,6 +5,8 @@ type ProductValidation = {
   sanitizedProduct?: Product;
 };
 
+const FALLBACK_IMAGE = "/placeholder-image.svg"; // Adicione esta constante
+
 const DEFAULT_PRODUCT: Omit<Product, "id"> = {
   name: "Produto sem nome",
   price: 0,
@@ -12,10 +14,11 @@ const DEFAULT_PRODUCT: Omit<Product, "id"> = {
   category: "Sem categoria",
   subBrand: "Sem marca",
   description: "",
-  imageUrl: "https://via.placeholder.com/150",
-  images: [],
+  imageUrl: FALLBACK_IMAGE, // Use a constante Base64 aqui
+  images: [FALLBACK_IMAGE],
   status: "Disponível",
   createdAt: new Date().toISOString(),
+  tags: [],
 };
 
 // Função de validação reutilizável
@@ -36,16 +39,26 @@ const validateProduct = (rawProduct: any): ProductValidation => {
       category: String(baseProduct.category).trim() || DEFAULT_PRODUCT.category,
       subBrand: String(baseProduct.subBrand).trim() || DEFAULT_PRODUCT.subBrand,
       description: String(baseProduct.description).trim(),
-      imageUrl: String(baseProduct.imageUrl).trim() || DEFAULT_PRODUCT.imageUrl,
+      imageUrl: String(baseProduct.imageUrl).trim() || FALLBACK_IMAGE,
       images: Array.isArray(baseProduct.images)
         ? baseProduct.images
-            .map((img: any) => String(img).trim())
+            .map((img: any) =>
+              String(img).trim().startsWith("data:image")
+                ? String(img).trim()
+                : FALLBACK_IMAGE,
+            )
             .filter(Boolean)
-        : DEFAULT_PRODUCT.images,
+        : [FALLBACK_IMAGE],
       status: ["Disponível", "Indisponível"].includes(baseProduct.status)
         ? baseProduct.status
         : DEFAULT_PRODUCT.status,
       createdAt: String(baseProduct.createdAt), // Garantir que é string
+      tags: Array.isArray(rawProduct.tags)
+        ? rawProduct.tags
+            .map((t: any) => String(t).trim().toLowerCase())
+            .filter((t: string) => t.length > 0)
+            .filter((v, i, a) => a.indexOf(v) === i) // Remove duplicates
+        : [],
     };
 
     return {

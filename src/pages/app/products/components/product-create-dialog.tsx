@@ -29,6 +29,8 @@ interface ProductCreateDialogProps {
   subBrands: string[];
 }
 
+const FALLBACK_IMAGE = "/placeholder-image.svg";
+
 export default function ProductCreateDialog({
   onClose,
   refresh,
@@ -46,6 +48,7 @@ export default function ProductCreateDialog({
     "Disponível",
   );
   const [isLoading, setIsLoading] = useState(false);
+  const [tags, setTags] = useState<string[]>([]);
 
   const validateFields = () => {
     if (!name.trim()) {
@@ -94,7 +97,6 @@ export default function ProductCreateDialog({
     try {
       setIsLoading(true);
 
-      // Converter TODAS as imagens para Base64
       const imagePromises = images.map((file) => {
         return new Promise<string>((resolve) => {
           const reader = new FileReader();
@@ -113,10 +115,11 @@ export default function ProductCreateDialog({
         category: category.trim(),
         subBrand: subBrand.trim(),
         description: description.trim(),
-        imageUrl: imageUrls[0] || "https://via.placeholder.com/150",
-        images: imageUrls,
+        imageUrl: imageUrls[0] || FALLBACK_IMAGE,
+        images: imageUrls.length > 0 ? imageUrls : [FALLBACK_IMAGE],
         status,
         createdAt: new Date().toISOString(),
+        tags: tags,
       };
 
       saveProduct(newProduct);

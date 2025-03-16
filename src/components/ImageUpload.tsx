@@ -19,6 +19,8 @@ const usePreventNavigation = (isActive: boolean) => {
   }, [isActive]);
 };
 
+const FALLBACK_IMAGE = "/placeholder-image.svg"; // Adicione esta constante
+
 export function ImageUpload({
   onUpload,
   onRemove,
@@ -52,9 +54,16 @@ export function ImageUpload({
 
   // Geração de URLs de pré-visualização
   useEffect(() => {
-    const newPreviews = files.map((file) =>
-      typeof file === "string" ? file : URL.createObjectURL(file),
-    );
+    const newPreviews = files.map((file) => {
+      if (typeof file === "string") {
+        // Verifica se é Base64 válido ou URL
+        return file.startsWith("data:image") || file.startsWith("http")
+          ? file
+          : FALLBACK_IMAGE;
+      }
+      return URL.createObjectURL(file);
+    });
+
     setPreviews(newPreviews);
 
     return () => {

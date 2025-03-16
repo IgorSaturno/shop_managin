@@ -1,6 +1,7 @@
 import {
+  ChartSpline,
   CircleUserRound,
-  Home,
+  List,
   PackageSearch,
   Settings,
   ShoppingBag,
@@ -21,9 +22,9 @@ import { NavLink } from "react-router-dom";
 // Menu items.
 const items = [
   {
-    title: "Home",
+    title: "Dashboard",
     url: "/dashboard",
-    icon: Home,
+    icon: ChartSpline,
   },
   {
     title: "Orders",
@@ -36,13 +37,18 @@ const items = [
     icon: PackageSearch,
   },
   {
+    title: "Customers",
+    url: "/customers",
+    icon: List,
+  },
+  {
     title: "Settings",
-    url: "#",
+    url: "/settings",
     icon: Settings,
   },
   {
     title: "User",
-    url: "#",
+    url: "/user",
     icon: CircleUserRound,
   },
 ];

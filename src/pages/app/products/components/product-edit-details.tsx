@@ -26,6 +26,9 @@ import {
 } from "@/lib/localStorage";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { TagsInput } from "@/components/TagsInput";
+
+const FALLBACK_IMAGE = "/placeholder-image.svg";
 
 interface ProductEditDetailsProps {
   product: Product;
@@ -43,13 +46,21 @@ export default function ProductEditDetails({
   const [categories, setCategories] = useState<string[]>([]);
   const [subBrands, setSubBrands] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [editedTags, setEditedTags] = useState<string[]>(product.tags);
 
   // Inicialização dos estados
   useEffect(() => {
-    setEditedProduct({ ...product });
-    setEditedImages([...product.images]);
+    setEditedProduct({
+      ...product,
+      imageUrl: product.imageUrl || FALLBACK_IMAGE,
+      images: product.images?.length > 0 ? product.images : [FALLBACK_IMAGE],
+    });
+    setEditedImages(
+      product.images?.length > 0 ? product.images : [FALLBACK_IMAGE],
+    );
     setCategories(getCategories());
     setSubBrands(getSubBrands());
+    setEditedTags(product.tags || []);
   }, [product]);
 
   // Conversão de arquivo para Base64
@@ -63,29 +74,8 @@ export default function ProductEditDetails({
   };
 
   // Atualização de imagens
-  const handleImageUpdate = async (files: (File | string)[]) => {
-    try {
-      setIsLoading(true);
-
-      const processedImages = await Promise.all(
-        files.map(async (img) => {
-          if (typeof img === "string") return img; // Mantém Base64 existentes
-
-          // Converte novos arquivos para Base64
-          return new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onload = (e) => resolve(e.target?.result as string);
-            reader.readAsDataURL(img);
-          });
-        }),
-      );
-
-      setEditedImages(processedImages);
-    } catch (error) {
-      toast.error("Erro ao processar imagens");
-    } finally {
-      setIsLoading(false);
-    }
+  const handleImageUpdate = (files: (File | string)[]) => {
+    setEditedImages(files);
   };
 
   // Validação de campos
@@ -128,7 +118,9 @@ export default function ProductEditDetails({
       // Processamento final das imagens
       const processedImages = await Promise.all(
         editedImages.map(async (img) => {
-          if (typeof img === "string") return img;
+          if (typeof img === "string") {
+            return img.startsWith("data:image") ? img : FALLBACK_IMAGE;
+          }
           return await fileToBase64(img);
         }),
       );
@@ -137,10 +129,11 @@ export default function ProductEditDetails({
         ...editedProduct,
         price: Number(editedProduct.price),
         stock: Number(editedProduct.stock),
-        images: processedImages,
-        imageUrl: processedImages[0] || "https://via.placeholder.com/150",
+        images: processedImages.length > 0 ? processedImages : [FALLBACK_IMAGE],
+        imageUrl: processedImages[0] || FALLBACK_IMAGE,
         category: editedProduct.category.trim() || "Sem categoria",
         subBrand: editedProduct.subBrand.trim() || "Sem marca",
+        tags: editedTags,
       };
 
       updateProduct(updatedProduct);
@@ -291,6 +284,11 @@ export default function ProductEditDetails({
             }
             className="min-h-[100px]"
           />
+        </div>
+
+        <div className="space-y-1">
+          <Label>Tags</Label>
+          <TagsInput initialTags={editedTags} onTagsChange={setEditedTags} />
         </div>
 
         {/* Upload de Imagens */}

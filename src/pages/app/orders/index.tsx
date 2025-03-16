@@ -1,18 +1,20 @@
-import { Helmet } from 'react-helmet-async'
+import { Helmet } from "react-helmet-async";
 
-import { Pagination } from '@/components/pagination'
 import {
   Table,
   TableBody,
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from "@/components/ui/table";
 
-import { OrderTableFilters } from './order-table-filters'
-import { OrderTableRow } from './order-table-row'
+import { OrderTableFilters } from "./order-table-filters";
+import { OrderTableRow } from "./order-table-row";
+import { Pagination } from "@/components/pagination";
+import { useState } from "react";
 
 export function Orders() {
+  const [currentPage, setCurrentPage] = useState(1);
   return (
     <>
       <Helmet title="Pedidos" />
@@ -37,14 +39,19 @@ export function Orders() {
               </TableHeader>
               <TableBody>
                 {Array.from({ length: 10 }).map((_, i) => {
-                  return <OrderTableRow key={i} />
+                  return <OrderTableRow key={i} />;
                 })}
               </TableBody>
             </Table>
           </div>
-          <Pagination pageIndex={0} totalCount={105} perPage={10} />
+          <Pagination
+            onPageChange={setCurrentPage}
+            pageIndex={0}
+            totalCount={105}
+            perPage={10}
+          />
         </div>
       </div>
     </>
-  )
+  );
 }

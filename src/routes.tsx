@@ -4,8 +4,8 @@ import { AppLayout } from "./pages/_layouts/app";
 import { AuthLayout } from "./pages/_layouts/auth";
 import { NotFound } from "./pages/404";
 
-import { Dashboard } from "./pages/app/pages/home";
-import { Orders } from "./pages/app/pages/orders";
+import { Dashboard } from "./pages/app/dashboard";
+import { Orders } from "./pages/app/orders";
 import { Overview } from "./pages/app/overview";
 
 import { SignIn } from "./pages/auth/sign-in";
@@ -13,6 +13,9 @@ import { SignUp } from "./pages/auth/sign-up";
 
 import { Error } from "./pages/error";
 import Products from "./pages/app/products";
+import { User } from "./pages/app/user";
+import { Settings } from "./pages/app/settings";
+import { Customers } from "./pages/app/customers";
 
 export const router = createBrowserRouter([
   {
@@ -24,10 +27,10 @@ export const router = createBrowserRouter([
       { path: "/dashboard", element: <Dashboard /> },
       { path: "/orders", element: <Orders /> },
       { path: "/products", element: <Products /> },
-      // { path: "/custommers", element: <Customers /> },
-      // { path: "/users", element: <User /> },
+      { path: "/customers", element: <Customers /> },
+      { path: "/user", element: <User /> },
       // { path: "/support", element: <Support /> },
-      // { path: "/settings", element: <Settings /> },
+      { path: "/settings", element: <Settings /> },
     ],
   },
   {

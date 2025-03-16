@@ -10,4 +10,5 @@ export interface Product {
   images: string[];
   status: "Disponível" | "Indisponível";
   createdAt: string;
+  tags: string[];
 }

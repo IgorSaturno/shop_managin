@@ -9,15 +9,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Helmet } from "react-helmet-async";
-import { ProductTableFilters } from "./components/product-table-filters";
+import { ProductTableFilters } from "@/pages/app/products/components/product-table-filters";
 import { Pagination } from "@/components/pagination";
-import { ProductTableRow } from "./components/product-table-row";
+import { ProductTableRow } from "@/pages/app/products/components/product-table-row";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Product } from "@/types/Product";
 import { getProducts, getCategories, getSubBrands } from "@/lib/localStorage";
-import ProductCreateDialog from "@/pages/app/products/components/product-create-dialog.tsx";
+import ProductCreateDialog from "@/pages/app/products/components/product-create-dialog";
 import { toast } from "sonner";
 
 export default function Products() {

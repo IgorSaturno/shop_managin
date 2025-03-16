@@ -58,7 +58,12 @@ export function User() {
               <Label htmlFor="username" className="text-md font-semibold">
                 Username
               </Label>
-              <Input id="username" type="text" {...register("username")} />
+              <Input
+                placeholder="Digite seu nome fantasia..."
+                id="username"
+                type="text"
+                {...register("username")}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email" className="text-md font-semibold">
