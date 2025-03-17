@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   DialogContent,
   DialogDescription,
@@ -21,17 +21,19 @@ import { Product } from "@/types/Product";
 import { saveProduct, getProducts } from "@/lib/localStorage";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { TagsInput } from "@/components/TagsInput";
+import { getTags } from "@/lib/localStorage";
 
 interface ProductCreateDialogProps {
   onClose: () => void;
   refresh: (products: Product[]) => void;
   categories: string[];
   subBrands: string[];
+  isOpen: boolean;
 }
 
-const FALLBACK_IMAGE = "/placeholder-image.svg";
-
 export default function ProductCreateDialog({
+  isOpen,
   onClose,
   refresh,
   categories,
@@ -48,7 +50,39 @@ export default function ProductCreateDialog({
     "Disponível",
   );
   const [isLoading, setIsLoading] = useState(false);
-  const [tags, setTags] = useState<string[]>([]);
+
+  // Estados das tags
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+  useEffect(() => {
+    const loadTags = () => {
+      try {
+        const loadedTags = getTags();
+        if (Array.isArray(loadedTags)) {
+          setAvailableTags(loadedTags.filter((tag) => typeof tag === "string"));
+        } else {
+          setAvailableTags([]);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar tags:", error);
+        setAvailableTags([]);
+      }
+    };
+
+    if (isOpen) {
+      loadTags();
+      // Resetar estados quando abre
+      setName("");
+      setPrice("");
+      setStock("");
+      setCategory("");
+      setSubBrand("");
+      setDescription("");
+      setImages([]);
+      setSelectedTags([]);
+    }
+  }, [isOpen]);
 
   const validateFields = () => {
     if (!name.trim()) {
@@ -57,24 +91,14 @@ export default function ProductCreateDialog({
     }
 
     const priceNumber = parseFloat(price);
-    if (isNaN(priceNumber)) {
+    if (isNaN(priceNumber) || priceNumber < 0) {
       toast.error("Preço inválido");
       return false;
     }
 
-    if (priceNumber < 0) {
-      toast.error("O preço não pode ser negativo");
-      return false;
-    }
-
     const stockNumber = parseInt(stock);
-    if (isNaN(stockNumber)) {
+    if (isNaN(stockNumber) || stockNumber < 0) {
       toast.error("Estoque inválido");
-      return false;
-    }
-
-    if (stockNumber < 0) {
-      toast.error("O estoque não pode ser negativo");
       return false;
     }
 
@@ -97,13 +121,14 @@ export default function ProductCreateDialog({
     try {
       setIsLoading(true);
 
-      const imagePromises = images.map((file) => {
-        return new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = (e) => resolve(e.target?.result as string);
-          reader.readAsDataURL(file);
-        });
-      });
+      const imagePromises = images.map(
+        (file) =>
+          new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target?.result as string);
+            reader.readAsDataURL(file);
+          }),
+      );
 
       const imageUrls = await Promise.all(imagePromises);
 
@@ -115,16 +140,17 @@ export default function ProductCreateDialog({
         category: category.trim(),
         subBrand: subBrand.trim(),
         description: description.trim(),
-        imageUrl: imageUrls[0] || FALLBACK_IMAGE,
-        images: imageUrls.length > 0 ? imageUrls : [FALLBACK_IMAGE],
+        imageUrl: imageUrls[0] || "/placeholder-image.svg",
+        images: imageUrls,
         status,
+        tags: Array.isArray(selectedTags) ? selectedTags : [],
         createdAt: new Date().toISOString(),
-        tags: tags,
       };
 
       saveProduct(newProduct);
       refresh(getProducts());
       onClose();
+      toast.success("Produto criado com sucesso!");
     } catch (error) {
       console.error("Erro ao criar produto:", error);
       toast.error("Falha ao criar produto");
@@ -134,11 +160,11 @@ export default function ProductCreateDialog({
   };
 
   return (
-    <DialogContent>
+    <DialogContent className="max-w-2xl">
       <DialogHeader>
         <DialogTitle>Adicionar Novo Produto</DialogTitle>
         <DialogDescription>
-          Preencha os campos para criar um produto
+          Preencha os campos para criar um novo produto
         </DialogDescription>
       </DialogHeader>
 
@@ -227,6 +253,17 @@ export default function ProductCreateDialog({
               </SelectContent>
             </Select>
           </div>
+        </div>
+
+        <div className="space-y-1">
+          <Label>Tags</Label>
+          <TagsInput
+            availableTags={availableTags}
+            selectedTags={selectedTags}
+            onTagsChange={(tags) =>
+              setSelectedTags(Array.isArray(tags) ? tags : [])
+            }
+          />
         </div>
 
         <div className="space-y-1">

@@ -16,10 +16,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { saveCategory, saveSubBrand } from "@/lib/localStorage";
+import {
+  getTags,
+  removeTag,
+  saveCategory,
+  saveSubBrand,
+  saveTag,
+} from "@/lib/localStorage";
 import { toast } from "sonner";
-import { Label } from "@/components/ui/label";
-import { TagsInput } from "@/components/TagsInput";
 
 export function ProductTableFilters({
   onFilter,
@@ -29,50 +33,74 @@ export function ProductTableFilters({
   setSubBrands,
 }: {
   onFilter: (filters: {
-    id: string;
-    name: string;
+    searchTerm: string;
     category: string;
     subBrand: string;
     status: string;
-    tags: string[];
   }) => void;
   categories: string[];
   setCategories: (categories: string[]) => void;
   subBrands: string[];
   setSubBrands: (subBrands: string[]) => void;
 }) {
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedSubBrand, setSelectedSubBrand] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
 
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isSubBrandModalOpen, setIsSubBrandModalOpen] = useState(false);
+  const [isTagsModalOpen, setIsTagsModalOpen] = useState(false);
 
   const [newCategory, setNewCategory] = useState("");
   const [newSubBrand, setNewSubBrand] = useState("");
+  const [newTag, setNewTag] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
 
-  const [idFilter, setIdFilter] = useState("");
-  const [nameFilter, setNameFilter] = useState("");
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  useEffect(() => {
+    setTags(getTags());
+  }, []);
 
   // Atualiza filtros quando qualquer valor muda
   useEffect(() => {
     handleFilter();
   }, [selectedCategory, selectedSubBrand, selectedStatus]);
 
+  const getCurrentFilters = () => ({
+    searchTerm,
+    category: selectedCategory,
+    subBrand: selectedSubBrand,
+    status: selectedStatus,
+  });
+
+  const handleFilter = () => {
+    onFilter(getCurrentFilters());
+  };
+
+  const handleClearFilters = () => {
+    setSearchTerm("");
+    setSelectedCategory("all");
+    setSelectedSubBrand("all");
+    setSelectedStatus("all");
+    onFilter({
+      searchTerm: "",
+      category: "all",
+      subBrand: "all",
+      status: "all",
+    });
+    toast.success("Filtros resetados");
+  };
+
   const addCategory = () => {
     const trimmedCategory = newCategory.trim();
-
     if (!trimmedCategory) {
       toast.warning("Digite um nome para a categoria");
       return;
     }
-
     if (categories.includes(trimmedCategory)) {
       toast.warning("Esta categoria já existe");
       return;
     }
-
     try {
       const updatedCategories = [...categories, trimmedCategory];
       setCategories(updatedCategories);
@@ -80,7 +108,6 @@ export function ProductTableFilters({
       setNewCategory("");
       toast.success("Categoria adicionada com sucesso");
     } catch (error) {
-      console.error("Erro ao adicionar categoria:", error);
       toast.error("Falha ao adicionar categoria");
     }
   };
@@ -90,16 +117,9 @@ export function ProductTableFilters({
       const updatedCategories = categories.filter((c) => c !== category);
       setCategories(updatedCategories);
       localStorage.setItem("categories", JSON.stringify(updatedCategories));
-
-      // Atualiza filtro se a categoria removida estava selecionada
-      if (selectedCategory === category) {
-        setSelectedCategory("all");
-        onFilter({ ...getCurrentFilters(), category: "all" });
-      }
-
+      if (selectedCategory === category) setSelectedCategory("all");
       toast.success("Categoria removida");
     } catch (error) {
-      console.error("Erro ao remover categoria:", error);
       toast.error("Falha ao remover categoria");
     }
   };
@@ -124,7 +144,6 @@ export function ProductTableFilters({
       setNewSubBrand("");
       toast.success("Marca adicionada com sucesso");
     } catch (error) {
-      console.error("Erro ao adicionar marca:", error);
       toast.error("Falha ao adicionar marca");
     }
   };
@@ -134,48 +153,43 @@ export function ProductTableFilters({
       const updatedSubBrands = subBrands.filter((sb) => sb !== subBrand);
       setSubBrands(updatedSubBrands);
       localStorage.setItem("subBrands", JSON.stringify(updatedSubBrands));
-
-      // Atualiza filtro se a marca removida estava selecionada
-      if (selectedSubBrand === subBrand) {
-        setSelectedSubBrand("all");
-        onFilter({ ...getCurrentFilters(), subBrand: "all" });
-      }
-
+      if (selectedSubBrand === subBrand) setSelectedSubBrand("all");
       toast.success("Marca removida");
     } catch (error) {
-      console.error("Erro ao remover marca:", error);
       toast.error("Falha ao remover marca");
     }
   };
 
-  const getCurrentFilters = () => ({
-    id: idFilter,
-    name: nameFilter,
-    category: selectedCategory,
-    subBrand: selectedSubBrand,
-    status: selectedStatus,
-    tags: selectedTags,
-  });
-
-  const handleFilter = () => {
-    onFilter(getCurrentFilters());
+  const handleAddTag = () => {
+    const trimmedTag = newTag.trim().toLowerCase();
+    if (!trimmedTag) {
+      toast.warning("Digite um nome para a tag");
+      return;
+    }
+    if (tags.includes(trimmedTag)) {
+      toast.warning("Esta tag já existe");
+      return;
+    }
+    try {
+      const updatedTags = [...tags, trimmedTag];
+      setTags(updatedTags);
+      saveTag(trimmedTag);
+      setNewTag("");
+      toast.success("Tag adicionada com sucesso");
+    } catch (error) {
+      toast.error("Erro ao salvar tag");
+    }
   };
 
-  const handleClearFilters = () => {
-    setIdFilter("");
-    setNameFilter("");
-    setSelectedCategory("all");
-    setSelectedSubBrand("all");
-    setSelectedStatus("all");
-    onFilter({
-      id: "",
-      name: "",
-      category: "all",
-      subBrand: "all",
-      status: "all",
-      tags: [],
-    });
-    toast.success("Filtros resetados");
+  const handleRemoveTag = (tag: string) => {
+    try {
+      const updatedTags = tags.filter((t) => t !== tag);
+      setTags(updatedTags);
+      removeTag(tag);
+      toast.success("Tag removida");
+    } catch (error) {
+      toast.error("Erro ao remover tag");
+    }
   };
 
   return (
@@ -189,23 +203,21 @@ export function ProductTableFilters({
       <span className="text-sm font-semibold">Filtros:</span>
 
       <div className="grid grid-cols-1 gap-2 sm:flex sm:items-center sm:gap-2">
-        {/* Filtro por ID */}
         <Input
-          placeholder="ID do produto"
-          className="h-8 w-full sm:w-[120px]"
-          value={idFilter}
-          onChange={(e) => setIdFilter(e.target.value)}
+          placeholder="Pesquisar por ID, Nome ou Tags"
+          className="h-8 w-full"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
         />
 
-        {/* Filtro por Nome */}
-        <Input
-          placeholder="Nome do produto"
-          className="h-8 w-full sm:w-[180px]"
-          value={nameFilter}
-          onChange={(e) => setNameFilter(e.target.value)}
-        />
-
-        <TagsInput initialTags={selectedTags} onTagsChange={setSelectedTags} />
+        <Button
+          type="button"
+          variant="outline"
+          size="xs"
+          onClick={() => setIsTagsModalOpen(true)}
+        >
+          Gerenciar Tags
+        </Button>
 
         {/* Filtro por Categoria */}
         <div className="flex gap-2">
@@ -307,6 +319,50 @@ export function ProductTableFilters({
           Limpar Tudo
         </Button>
       </div>
+
+      <Dialog open={isTagsModalOpen} onOpenChange={setIsTagsModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Gerenciar Tags</DialogTitle>
+            <DialogDescription>
+              Crie e gerencie tags para classificação
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex gap-2">
+            <Input
+              placeholder="Nova tag"
+              value={newTag}
+              onChange={(e) => setNewTag(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
+            />
+            <Button onClick={handleAddTag}>Adicionar</Button>
+          </div>
+
+          <div className="mt-4 max-h-60 space-y-2 overflow-y-auto">
+            {tags.map((tag) => (
+              <div
+                key={tag}
+                className="flex items-center justify-between rounded p-2 hover:bg-muted"
+              >
+                <span className="text-sm">{tag}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleRemoveTag(tag)}
+                >
+                  <Trash className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+            ))}
+            {tags.length === 0 && (
+              <p className="text-center text-sm text-muted-foreground">
+                Nenhuma tag cadastrada
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Modal para Categorias */}
       <Dialog open={isCategoryModalOpen} onOpenChange={setIsCategoryModalOpen}>

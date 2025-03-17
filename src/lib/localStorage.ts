@@ -199,6 +199,33 @@ export const saveSubBrand = (subBrand: string): void => {
   }
 };
 
+// Adicione/atualize estas funções
+export const getTags = (): string[] => {
+  try {
+    const tags = localStorage.getItem("tags");
+    if (!tags) return [];
+    const parsed = JSON.parse(tags);
+    return Array.isArray(parsed)
+      ? parsed.filter((t) => typeof t === "string")
+      : [];
+  } catch (error) {
+    console.error("Error loading tags:", error);
+    return [];
+  }
+};
+
+export const saveTag = (tag: string): void => {
+  const tags = getTags();
+  if (!tags.includes(tag)) {
+    localStorage.setItem("tags", JSON.stringify([...tags, tag]));
+  }
+};
+
+export const removeTag = (tag: string): void => {
+  const tags = getTags().filter((t) => t !== tag);
+  localStorage.setItem("tags", JSON.stringify(tags));
+};
+
 // Funções de manutenção
 export const backupLocalStorage = (): Record<string, unknown> => {
   return {

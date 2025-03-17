@@ -1,73 +1,112 @@
-import { useCallback, useState, KeyboardEvent } from "react";
-import { X } from "lucide-react";
+import { Check, ChevronsUpDown, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
 
 interface TagsInputProps {
-  initialTags?: string[];
+  availableTags: string[];
+  selectedTags: string[];
   onTagsChange: (tags: string[]) => void;
 }
 
-export function TagsInput({ initialTags = [], onTagsChange }: TagsInputProps) {
-  const [inputValue, setInputValue] = useState("");
-  const [tags, setTags] = useState<string[]>(initialTags);
+export function TagsInput({
+  availableTags = [],
+  selectedTags = [],
+  onTagsChange,
+}: TagsInputProps) {
+  const [open, setOpen] = useState(false);
 
-  const addTag = useCallback(() => {
-    const newTag = inputValue.trim().toLowerCase();
-    if (newTag && !tags.includes(newTag)) {
-      const newTags = [...tags, newTag];
-      setTags(newTags);
-      onTagsChange(newTags);
-    }
-    setInputValue("");
-  }, [inputValue, tags, onTagsChange]);
+  // Garantia de tipos e valores válidos
+  const safeAvailableTags = Array.isArray(availableTags)
+    ? availableTags.filter((tag) => typeof tag === "string")
+    : [];
 
-  const removeTag = useCallback(
-    (index: number) => {
-      const newTags = tags.filter((_, i) => i !== index);
-      setTags(newTags);
-      onTagsChange(newTags);
-    },
-    [tags, onTagsChange],
-  );
+  const safeSelectedTags = Array.isArray(selectedTags)
+    ? selectedTags.filter((tag) => typeof tag === "string")
+    : [];
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (["Enter", ",", "Tab"].includes(e.key)) {
-      e.preventDefault();
-      addTag();
-    }
+  const toggleTag = (tag: string) => {
+    const newTags = safeSelectedTags.includes(tag)
+      ? safeSelectedTags.filter((t) => t !== tag)
+      : [...safeSelectedTags, tag];
+    onTagsChange(newTags);
   };
 
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-2">
-        {tags.map((tag, index) => (
-          <span
+        {safeSelectedTags.map((tag) => (
+          <Badge
             key={tag}
-            className="flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-sm text-blue-800"
+            variant="secondary"
+            className="flex items-center gap-1"
           >
             {tag}
             <button
               type="button"
-              onClick={() => removeTag(index)}
-              className="rounded-full hover:bg-blue-200"
+              onClick={() => toggleTag(tag)}
+              className="ml-1 rounded-full hover:bg-accent"
+              aria-label={`Remover tag ${tag}`}
             >
-              <X className="h-4 w-4" />
+              <X className="h-3 w-3" />
             </button>
-          </span>
+          </Badge>
         ))}
       </div>
 
-      <input
-        type="text"
-        value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder="Digite tags e pressione Enter"
-        className="w-full rounded-md border p-2 text-sm"
-      />
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            className="w-full justify-between"
+            aria-expanded={open}
+          >
+            Selecionar tags...
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
 
-      <p className="text-sm text-muted-foreground">
-        Separe tags com vírgula ou pressione Enter
-      </p>
+        <PopoverContent className="p-0" align="start">
+          <Command>
+            <CommandInput placeholder="Pesquisar tags..." />
+            <CommandEmpty>Nenhuma tag encontrada</CommandEmpty>
+            <CommandGroup className="max-h-48 overflow-y-auto">
+              {safeAvailableTags.map((tag) => (
+                <CommandItem
+                  key={tag}
+                  value={tag}
+                  onSelect={() => toggleTag(tag)}
+                  className="cursor-pointer"
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      safeSelectedTags.includes(tag)
+                        ? "opacity-100"
+                        : "opacity-0",
+                    )}
+                  />
+                  {tag}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </Command>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }

@@ -85,18 +85,21 @@ export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
       <TableCell className="hidden text-muted-foreground sm:table-cell sm:w-[180px]">
         {product.subBrand || "Sem marca"}
       </TableCell>
+
       <TableCell className="hidden sm:table-cell">
         <div className="flex flex-wrap gap-1">
-          {product.tags?.map((tag) => (
-            <span
-              key={tag}
-              className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600"
-            >
-              {tag}
-            </span>
-          ))}
+          {Array.isArray(product.tags) &&
+            product.tags.map((tag) => (
+              <span
+                key={tag}
+                className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600"
+              >
+                {tag}
+              </span>
+            ))}
         </div>
       </TableCell>
+
       <TableCell className="font-medium sm:w-[120px]">
         {product.stock ?? 0} unidades
       </TableCell>

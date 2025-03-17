@@ -24,14 +24,12 @@ export default function Products() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [filters, setFilters] = useState<{
-    id: string;
-    name: string;
+    searchTerm: string;
     category: string;
     subBrand: string;
     status: string;
   }>({
-    id: "",
-    name: "",
+    searchTerm: "",
     category: "all",
     subBrand: "all",
     status: "all",
@@ -53,6 +51,7 @@ export default function Products() {
         const correctedProducts = parsedProducts.map((product: Product) => ({
           ...product,
           createdAt: product.createdAt || new Date().toISOString(),
+          tags: product.tags || [],
         }));
 
         localStorage.setItem("products", JSON.stringify(correctedProducts));
@@ -72,17 +71,9 @@ export default function Products() {
         const loadedCategories = getCategories();
         const loadedSubBrands = getSubBrands();
 
-        if (!Array.isArray(loadedProducts)) {
-          console.error("Dados inválidos, resetando...");
-          localStorage.removeItem("products");
-          setProducts([]);
-          return;
-        }
-
         setProducts(loadedProducts);
         setCategories(loadedCategories);
         setSubBrands(loadedSubBrands);
-        toast.success("Dados carregados com sucesso");
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
         toast.error("Falha ao carregar dados");
@@ -95,13 +86,18 @@ export default function Products() {
 
   // Filtra produtos com memoização
   const filteredProducts = useMemo(() => {
+    const searchTerms = filters.searchTerm.toLowerCase().split(" ");
+
     return products.filter((product) => {
-      const matchesId = filters.id
-        ? product.id.toLowerCase().includes(filters.id.toLowerCase())
-        : true;
-      const matchesName = filters.name
-        ? product.name.toLowerCase().includes(filters.name.toLowerCase())
-        : true;
+      const matchesSearch = searchTerms.every((term) => {
+        const searchContent = `
+          ${product.id}
+          ${product.name}
+          ${product.tags?.join(" ")}
+        `.toLowerCase();
+        return searchContent.includes(term);
+      });
+
       const matchesCategory =
         filters.category === "all" || product.category === filters.category;
       const matchesSubBrand =
@@ -110,11 +106,7 @@ export default function Products() {
         filters.status === "all" || product.status === filters.status;
 
       return (
-        matchesId &&
-        matchesName &&
-        matchesCategory &&
-        matchesSubBrand &&
-        matchesStatus
+        matchesSearch && matchesCategory && matchesSubBrand && matchesStatus
       );
     });
   }, [filters, products]);
@@ -168,6 +160,7 @@ export default function Products() {
             </DialogTrigger>
 
             <ProductCreateDialog
+              isOpen={isCreateOpen}
               onClose={() => {
                 setIsCreateOpen(false);
                 refreshProducts();
@@ -186,13 +179,16 @@ export default function Products() {
                 <TableRow>
                   <TableHead className="w-[64px]"></TableHead>
                   <TableHead className="w-[100px]">Imagem</TableHead>
-                  <TableHead className="w-[140px]">Identificador</TableHead>
+                  <TableHead className="w-[140px]">ID</TableHead>
                   <TableHead>Nome</TableHead>
                   <TableHead className="hidden w-[180px] sm:table-cell">
                     Categoria
                   </TableHead>
                   <TableHead className="hidden w-[180px] sm:table-cell">
-                    Sub marca
+                    Sub Marca
+                  </TableHead>
+                  <TableHead className="hidden w-[200px] sm:table-cell">
+                    Tags
                   </TableHead>
                   <TableHead className="w-[120px]">Estoque</TableHead>
                   <TableHead className="w-[140px]">Preço</TableHead>
