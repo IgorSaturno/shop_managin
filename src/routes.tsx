@@ -6,16 +6,16 @@ import { NotFound } from "./pages/404";
 
 import { Dashboard } from "./pages/app/dashboard";
 import { Orders } from "./pages/app/orders";
-import { Overview } from "./pages/app/overview";
+// import { Overview } from "./pages/app/overview";
 
 import { SignIn } from "./pages/auth/sign-in";
 import { SignUp } from "./pages/auth/sign-up";
 
 import { Error } from "./pages/error";
-import Products from "./pages/app/products";
-import { User } from "./pages/app/user";
-import { Settings } from "./pages/app/settings";
-import { Customers } from "./pages/app/customers";
+// import Products from "./pages/app/products";
+// import { User } from "./pages/app/user";
+// import { Settings } from "./pages/app/settings";
+// import { Customers } from "./pages/app/customers";
 
 export const router = createBrowserRouter([
   {
@@ -23,14 +23,14 @@ export const router = createBrowserRouter([
     element: <AppLayout />,
     errorElement: <Error />,
     children: [
-      { path: "/overview", element: <Overview /> },
-      { path: "/dashboard", element: <Dashboard /> },
+      // { path: "/overview", element: <Overview /> },
+      { path: "/", element: <Dashboard /> },
       { path: "/orders", element: <Orders /> },
-      { path: "/products", element: <Products /> },
-      { path: "/customers", element: <Customers /> },
-      { path: "/user", element: <User /> },
+      // { path: "/products", element: <Products /> },
+      // { path: "/customers", element: <Customers /> },
+      // { path: "/user", element: <User /> },
       // { path: "/support", element: <Support /> },
-      { path: "/settings", element: <Settings /> },
+      // { path: "/settings", element: <Settings /> },
     ],
   },
   {

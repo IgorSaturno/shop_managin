@@ -7,9 +7,11 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useMutation } from "@tanstack/react-query";
+import { registerStore } from "@/api/register-store";
 
 const signUpForm = z.object({
-  restaurantName: z.string(),
+  storeName: z.string(),
   managerName: z.string(),
   phone: z.string(),
   email: z.string().email(),
@@ -27,16 +29,25 @@ export function SignUp() {
     formState: { isSubmitting },
   } = useForm<SignUpForm>();
 
+  const { mutateAsync: registerStoreFn } = useMutation({
+    mutationFn: registerStore,
+  });
+
   async function handleSignUp(data: SignUpForm) {
     try {
-      console.log(data);
+      await registerStoreFn({
+        storeName: data.storeName,
+        managerName: data.managerName,
+        email: data.email,
+        phone: data.phone,
+      });
 
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      toast.success("Restaurante cadastrado com sucesso!", {
+      toast.success("Loja cadastrada com sucesso!", {
         action: {
           label: "Login",
-          onClick: () => navigate("/sign-in"),
+          onClick: () => navigate(`/sign-in?email=${data.email}`),
         },
       });
     } catch {
@@ -63,12 +74,8 @@ export function SignUp() {
 
           <form onSubmit={handleSubmit(handleSignUp)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="restaurantName">Nome do estabelecimento</Label>
-              <Input
-                id="restaurantName"
-                type="text"
-                {...register("restaurantName")}
-              />
+              <Label htmlFor="storeName">Nome do estabelecimento</Label>
+              <Input id="storeName" type="text" {...register("storeName")} />
             </div>
 
             <div className="space-y-2">
