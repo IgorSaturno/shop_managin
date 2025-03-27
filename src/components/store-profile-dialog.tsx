@@ -1,6 +1,18 @@
-import { useQuery } from "@tanstack/react-query";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
+
+import {
+  getManagedStore,
+  GetManagedStoreResponse,
+} from "@/api/get-managed-store";
+import { updateProfile } from "@/api/update-profile";
+
 import { Button } from "./ui/button";
 import {
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -10,40 +22,88 @@ import {
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
-import { getManagedStore } from "@/api/get-managed-store";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
 
 const storeProfileSchema = z.object({
   name: z.string().min(1),
-  description: z.string(),
+  description: z.string().nullable(),
 });
 
 type StoreProfileSchema = z.infer<typeof storeProfileSchema>;
 
 export function StoreProfileDialog() {
+  const queryClient = useQueryClient();
+
   const { data: managedStore } = useQuery({
     queryKey: ["managed-store"],
     queryFn: getManagedStore,
+    staleTime: Infinity,
   });
 
-  const { register, handleSubmit } = useForm<StoreProfileSchema>({
+  const {
+    register,
+    handleSubmit,
+    formState: { isSubmitting },
+  } = useForm<StoreProfileSchema>({
     resolver: zodResolver(storeProfileSchema),
     values: {
       name: managedStore?.name ?? "",
       description: managedStore?.description ?? "",
     },
   });
+
+  const { mutateAsync: updateProfileFn } = useMutation({
+    mutationFn: updateProfile,
+    onMutate({ name, description }) {
+      const { cached } = updateManagedStoreCache({ name, description });
+
+      return { previousProfile: cached };
+    },
+    onError(_error, _variables, context) {
+      if (context?.previousProfile) {
+        updateManagedStoreCache(context.previousProfile);
+      }
+    },
+  });
+
+  function updateManagedStoreCache({ name, description }: StoreProfileSchema) {
+    const cached = queryClient.getQueryData<GetManagedStoreResponse>([
+      "managed-store",
+    ]);
+
+    if (cached) {
+      queryClient.setQueryData<GetManagedStoreResponse>(["managed-store"], {
+        ...cached,
+        name,
+        description,
+      });
+    }
+
+    return { cached };
+  }
+
+  async function handleUpdateProfile(data: StoreProfileSchema) {
+    try {
+      await updateProfileFn({
+        name: data.name,
+        description: data.description,
+      });
+
+      toast.success("Perfil atualizado com sucesso!");
+    } catch {
+      toast.error("Falha ao atualizar o perfil, tente novamente");
+    }
+  }
+
   return (
     <DialogContent>
       <DialogHeader>
         <DialogTitle>Perfil da loja</DialogTitle>
         <DialogDescription>
-          Atualize as informações do seu estabelecimento
+          Atualize as informações do seu estabelecimento visíveis ao seu cliente
         </DialogDescription>
       </DialogHeader>
-      <form>
+
+      <form onSubmit={handleSubmit(handleUpdateProfile)}>
         <div className="space-y-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label className="text-right" htmlFor="name">
@@ -51,6 +111,7 @@ export function StoreProfileDialog() {
             </Label>
             <Input className="col-span-3" id="name" {...register("name")} />
           </div>
+
           <div className="grid grid-cols-4 items-center gap-4">
             <Label className="text-right" htmlFor="description">
               Descrição
@@ -62,12 +123,15 @@ export function StoreProfileDialog() {
             />
           </div>
         </div>
+
         <DialogFooter>
-          <Button type="button" variant="ghost">
-            Cancel
-          </Button>
-          <Button type="submit" variant="success">
-            salvar
+          <DialogClose asChild>
+            <Button variant="ghost" type="button">
+              Cancelar
+            </Button>
+          </DialogClose>
+          <Button type="submit" variant="success" disabled={isSubmitting}>
+            Salvar
           </Button>
         </DialogFooter>
       </form>

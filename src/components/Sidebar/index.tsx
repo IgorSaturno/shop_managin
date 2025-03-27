@@ -18,7 +18,6 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { NavLink } from "react-router-dom";
-import { AccountMenu } from "../account-menu";
 
 // Menu items.
 const items = [
