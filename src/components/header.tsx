@@ -21,10 +21,10 @@ export function Header() {
             <ShoppingBag className="h-4 w-4" />
             Pedidos
           </NavLink>
-          <NavLink to="/customers">
+          {/* <NavLink to="/customers">
             <List className="h-4 w-4" />
             Clientes
-          </NavLink>
+          </NavLink> */}
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
