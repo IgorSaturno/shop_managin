@@ -1,4 +1,4 @@
-import { Home, Pizza, UtensilsCrossed } from "lucide-react";
+import { Home, List, Pizza, ShoppingBag } from "lucide-react";
 import { ThemeToggle } from "./theme/theme-toogle";
 import { AccountMenu } from "./account-menu";
 import { Separator } from "./ui/separator";
@@ -18,8 +18,12 @@ export function Header() {
             Início
           </NavLink>
           <NavLink to="/orders">
-            <UtensilsCrossed className="h-4 w-4" />
+            <ShoppingBag className="h-4 w-4" />
             Pedidos
+          </NavLink>
+          <NavLink to="/customers">
+            <List className="h-4 w-4" />
+            Clientes
           </NavLink>
         </nav>
 

@@ -11,7 +11,7 @@ export interface PaginationProps {
   pageIndex: number;
   totalCount: number;
   perPage: number;
-  onPageChange: (pageIndex: number) => void;
+  onPageChange: (pageIndex: number) => Promise<void> | void;
 }
 
 export function Pagination({
@@ -30,7 +30,7 @@ export function Pagination({
 
       <div className="flex items-center gap-6 lg:gap-8">
         <div className="text-sm font-medium">
-          Página {pageIndex + 1} DE {pages}
+          Página {pageIndex + 1} de {pages}
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -55,7 +55,7 @@ export function Pagination({
             variant="outline"
             className="h-8 w-8 p-0"
             onClick={() => onPageChange(pageIndex + 1)}
-            disabled={pageIndex === pages - 1}
+            disabled={pageIndex === pages + 1}
           >
             <ChevronRight className="h-4 w-4" />
             <span className="sr-only">Próxima página</span>
@@ -64,7 +64,7 @@ export function Pagination({
             variant="outline"
             className="h-8 w-8 p-0"
             onClick={() => onPageChange(pages - 1)}
-            disabled={pageIndex === pages - 1}
+            disabled={pageIndex === pages + 1}
           >
             <ChevronsRight className="h-4 w-4" />
             <span className="sr-only">última página</span>

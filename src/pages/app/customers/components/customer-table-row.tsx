@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { TableCell, TableRow } from "@/components/ui/table";
-import { Customer } from "@/types/Customer";
+
 import { History, Search } from "lucide-react";
 import { CustomerDetails } from "./customer-details";
 import { CustomerHistory } from "./customer-history";
@@ -27,30 +27,17 @@ export function CustomerTableRow({ customer, refresh }: CustomerTableRowProps) {
       </TableCell>
 
       <TableCell className="font-mono text-xs font-medium sm:w-[100px]">
-        {/* {client.id} */}
-        s5g46fd4f6
+        {customer.id.slice(0, 8).toUpperCase()}
       </TableCell>
 
-      <TableCell className="sm:w-[120px]">
-        {/* {client.email} */}
-        client@client.com
-      </TableCell>
-      <TableCell className="font-medium">
-        {/* {client.name} */}
-        Teste1
-      </TableCell>
-      <TableCell className="sm:w-[100px]">
-        {/* {client.phone} */}
-        (11) 99999-9999
-      </TableCell>
+      <TableCell className="sm:w-[120px]">{customer.email}</TableCell>
+      <TableCell className="font-medium">{customer.name}</TableCell>
+      <TableCell className="sm:w-[100px]">{customer.phone || "N/A"}</TableCell>
       <TableCell className="sm:w-[100px]">
         {/* {client.cep} */}
         03534-190
       </TableCell>
-      <TableCell className="sm:w-[100px]">
-        {/* {client.purchases} */}
-        120
-      </TableCell>
+      <TableCell className="sm:w-[100px]">{customer.orderCount}</TableCell>
       <TableCell className="sm:w-[100px]">
         <div className="flex items-center gap-2">
           {/* <span
