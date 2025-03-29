@@ -43,7 +43,7 @@ export function AccountMenu() {
   });
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+    <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -76,12 +76,12 @@ export function AccountMenu() {
             )}
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DialogTrigger asChild>
-            <DropdownMenuItem>
-              <Building className="mr-2 h-4 w-4" />
-              <span>Perfil da loja</span>
-            </DropdownMenuItem>
-          </DialogTrigger>
+
+          <DropdownMenuItem onSelect={() => setDialogOpen(true)}>
+            <Building className="mr-2 h-4 w-4" />
+            <span>Perfil da loja</span>
+          </DropdownMenuItem>
+
           <DropdownMenuItem
             asChild
             className="text-rose-500 dark:text-rose-400"
@@ -94,8 +94,9 @@ export function AccountMenu() {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-
-      <StoreProfileDialog />
-    </Dialog>
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <StoreProfileDialog />
+      </Dialog>
+    </>
   );
 }

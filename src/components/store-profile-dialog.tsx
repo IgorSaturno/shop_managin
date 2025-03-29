@@ -22,10 +22,15 @@ import {
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
+import { useEffect } from "react";
+// import { useState } from "react";
+// import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+// import { uploadImage } from "@/api/update-image";
 
 const storeProfileSchema = z.object({
   name: z.string().min(1),
   description: z.string().nullable(),
+  // avatarUrl: z.string().nullable(),
 });
 
 type StoreProfileSchema = z.infer<typeof storeProfileSchema>;
@@ -39,22 +44,42 @@ export function StoreProfileDialog() {
     staleTime: Infinity,
   });
 
+  // const [previewImage, setPreviewImage] = useState<string>(
+  //   managedStore?.avatarUrl ?? "/default-avatar.png",
+  // );
+  // const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
   const {
     register,
     handleSubmit,
+    reset,
     formState: { isSubmitting },
   } = useForm<StoreProfileSchema>({
     resolver: zodResolver(storeProfileSchema),
-    values: {
-      name: managedStore?.name ?? "",
-      description: managedStore?.description ?? "",
+    defaultValues: {
+      name: "",
+      description: "",
+      // avatarUrl: managedStore?.avatarUrl ?? null,
     },
   });
 
+  useEffect(() => {
+    if (managedStore) {
+      reset({
+        name: managedStore.name,
+        description: managedStore.description,
+      });
+    }
+  }, [managedStore, reset]);
+
   const { mutateAsync: updateProfileFn } = useMutation({
     mutationFn: updateProfile,
-    onMutate({ name, description }) {
-      const { cached } = updateManagedStoreCache({ name, description });
+    onMutate({ name, description /**avatarUrl */ }) {
+      const { cached } = updateManagedStoreCache({
+        name,
+        description,
+        // avatarUrl,
+      });
 
       return { previousProfile: cached };
     },
@@ -65,7 +90,11 @@ export function StoreProfileDialog() {
     },
   });
 
-  function updateManagedStoreCache({ name, description }: StoreProfileSchema) {
+  function updateManagedStoreCache({
+    name,
+    description,
+    // avatarUrl,
+  }: StoreProfileSchema) {
     const cached = queryClient.getQueryData<GetManagedStoreResponse>([
       "managed-store",
     ]);
@@ -75,6 +104,7 @@ export function StoreProfileDialog() {
         ...cached,
         name,
         description,
+        // avatarUrl,
       });
     }
 
@@ -83,9 +113,17 @@ export function StoreProfileDialog() {
 
   async function handleUpdateProfile(data: StoreProfileSchema) {
     try {
+      //   let avatarUrl = managedStore?.avatarUrl ?? null;
+
+      //   if (selectedFile) {
+      //     const uploadResponse = await uploadImage(selectedFile);
+      //     avatarUrl = uploadResponse.url; // Supondo que o retorno da API tenha a URL da imagem
+      //   }
+
       await updateProfileFn({
         name: data.name,
         description: data.description,
+        // avatarUrl: data.avatarUrl,
       });
 
       toast.success("Perfil atualizado com sucesso!");
@@ -93,6 +131,14 @@ export function StoreProfileDialog() {
       toast.error("Falha ao atualizar o perfil, tente novamente");
     }
   }
+
+  // function handleImageChange(event: React.ChangeEvent<HTMLInputElement>) {
+  //   const file = event.target.files?.[0];
+  //   if (file) {
+  //     setSelectedFile(file);
+  //     setPreviewImage(URL.createObjectURL(file));
+  //   }
+  // }
 
   return (
     <DialogContent>
@@ -105,6 +151,17 @@ export function StoreProfileDialog() {
 
       <form onSubmit={handleSubmit(handleUpdateProfile)}>
         <div className="space-y-4 py-4">
+          {/* <div className="grid grid-cols-4 items-center gap-4">
+            <Avatar className="h-24 w-24">
+              <AvatarImage
+                src={previewImage ?? "/default-avatar.png"}
+                alt="Avatar da loja"
+              />
+              <AvatarFallback>LOJA</AvatarFallback>
+            </Avatar>
+            <Input type="file" accept="image/*" onChange={handleImageChange} />
+          </div> */}
+
           <div className="grid grid-cols-4 items-center gap-4">
             <Label className="text-right" htmlFor="name">
               Nome

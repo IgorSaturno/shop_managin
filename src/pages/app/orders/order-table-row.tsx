@@ -161,6 +161,32 @@ export function OrderTableRow({ order }: OrderTableRowProps) {
             Entregue
           </Button>
         )}
+
+        {[
+          "approved",
+          "refused",
+          "refunded",
+          "returned",
+          "delivered",
+          "canceled",
+          "failed_delivery",
+        ].includes(order.status) && (
+          <span className="text-sm text-muted-foreground">
+            {order.status === "approved"
+              ? "Aprovado"
+              : order.status === "refused"
+                ? "Recusado"
+                : order.status === "refunded"
+                  ? "Reembolsado"
+                  : order.status === "returned"
+                    ? "Devolvido"
+                    : order.status === "delivered"
+                      ? "Entregue"
+                      : order.status === "canceled"
+                        ? "Cancelado"
+                        : "Falha na entrega"}
+          </span>
+        )}
       </TableCell>
       <TableCell>
         <Button

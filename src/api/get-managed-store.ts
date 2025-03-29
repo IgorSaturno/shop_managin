@@ -7,6 +7,7 @@ export interface GetManagedStoreResponse {
   updatedAt: Date | null;
   description: string | null;
   managerId: string | null;
+  avatarUrl: string | null;
 }
 
 export async function getManagedStore() {
