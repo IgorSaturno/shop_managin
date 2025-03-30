@@ -33,6 +33,11 @@ export interface GetOrderDetailsResponse {
       name: string;
     };
   }[];
+
+  cep: string;
+  streetName: string;
+  number: string;
+  complement?: string;
 }
 
 export async function getOrderDetails({ orderId }: GetOrderDetailsParams) {

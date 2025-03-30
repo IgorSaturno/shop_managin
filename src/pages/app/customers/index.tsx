@@ -13,12 +13,12 @@ import {
 } from "@/components/ui/table";
 import { CustomerTableRow } from "./components/customer-table-row";
 import { Pagination } from "@/components/pagination";
-import { getCustomers } from "@/api/get-customers";
+import { getCustomers } from "@/api/get-customer";
 
 export function Customers() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const name = searchParams.get("name");
+  const customerName = searchParams.get("customerName");
   const email = searchParams.get("email");
 
   const pageIndex = z.coerce
@@ -27,8 +27,8 @@ export function Customers() {
     .parse(searchParams.get("page") ?? "1");
 
   const { data: result } = useQuery({
-    queryKey: ["customers", pageIndex, name, email],
-    queryFn: () => getCustomers({ pageIndex, name, email }),
+    queryKey: ["customers", pageIndex, customerName, email],
+    queryFn: () => getCustomers({ pageIndex, customerName, email }),
   });
 
   function handlePaginate(pageIndex: number) {
@@ -54,18 +54,21 @@ export function Customers() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[64px]"></TableHead>
-                  <TableHead className="w-[100px]">Identificador</TableHead>
-                  <TableHead className="w-[120px]">E-mail</TableHead>
+                  <TableHead className="w-[140px]">Identificador</TableHead>
+                  <TableHead className="w-[180px]">Cadastrado em</TableHead>
+                  <TableHead className="w-[180px]">E-mail</TableHead>
                   <TableHead>Nome</TableHead>
+                  <TableHead className="w-[140px]">Total de pedidos</TableHead>
                   <TableHead className="w-[164px]">Telefone</TableHead>
-                  <TableHead className="w-[100px]">N.Compras</TableHead>
-                  <TableHead className="w-[100px]">Cadastrado em</TableHead>
                   <TableHead className="w-[132px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {result?.customers.map((customer) => (
-                  <CustomerTableRow key={customer.id} customer={customer} />
+                  <CustomerTableRow
+                    key={customer.customerId}
+                    customer={customer}
+                  />
                 ))}
               </TableBody>
             </Table>

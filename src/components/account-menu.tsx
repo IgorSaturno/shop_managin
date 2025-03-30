@@ -94,9 +94,11 @@ export function AccountMenu() {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <StoreProfileDialog />
-      </Dialog>
+      {dialogOpen && managedStore && (
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <StoreProfileDialog />
+        </Dialog>
+      )}
     </>
   );
 }

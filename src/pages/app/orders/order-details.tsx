@@ -72,6 +72,30 @@ export function OrderDetails({ orderId, open }: OrderDetailsProps) {
                   {order.customer.email}
                 </TableCell>
               </TableRow>
+              <TableRow>
+                <TableCell className="text-muted-foreground">CEP</TableCell>
+                <TableCell className="flex justify-end">{order.cep}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="text-muted-foreground">Rua/Av</TableCell>
+                <TableCell className="flex justify-end">
+                  {order.streetName}
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="text-muted-foreground">Numero</TableCell>
+                <TableCell className="flex justify-end">
+                  {order.number}
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="text-muted-foreground">
+                  Complemento
+                </TableCell>
+                <TableCell className="flex justify-end">
+                  {order.complement}
+                </TableCell>
+              </TableRow>
 
               <TableRow>
                 <TableCell className="text-muted-foreground">

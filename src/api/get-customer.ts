@@ -2,18 +2,19 @@ import { api } from "@/lib/axios";
 
 export interface GetCustomersQuery {
   pageIndex?: number | null;
-  name?: string | null;
+  customerId?: string | null;
+  customerName?: string | null;
   email?: string | null;
 }
 
 export interface GetCustomersResponse {
   customers: {
-    id: string;
-    name: string;
+    customerId: string;
+    customerName: string;
     email: string;
     phone: string | null;
     orderCount: number;
-    createdAt: Date;
+    createdAt: string;
   }[];
   meta: {
     pageIndex: number;
@@ -24,13 +25,13 @@ export interface GetCustomersResponse {
 
 export async function getCustomers({
   pageIndex,
-  name,
+  customerName,
   email,
 }: GetCustomersQuery) {
   const response = await api.get<GetCustomersResponse>("/customers", {
     params: {
       pageIndex,
-      name,
+      name: customerName,
       email,
     },
   });
