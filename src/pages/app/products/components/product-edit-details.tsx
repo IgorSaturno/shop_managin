@@ -16,14 +16,9 @@ import {
 } from "@/components/ui/select";
 import { ImageUpload } from "@/components/ImageUpload";
 import { Textarea } from "@/components/ui/textarea";
-import { Product } from "@/types/Product";
+
 import { Button } from "@/components/ui/button";
-import {
-  updateProduct,
-  getProducts,
-  getCategories,
-  getSubBrands,
-} from "@/lib/localStorage";
+
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { TagsInput } from "@/components/TagsInput";

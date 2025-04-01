@@ -18,8 +18,9 @@ import { getCustomers } from "@/api/get-customer";
 export function Customers() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const customerName = searchParams.get("customerName");
+  const customerId = searchParams.get("customerId");
   const email = searchParams.get("email");
+  const phone = searchParams.get("phone");
 
   const pageIndex = z.coerce
     .number()
@@ -27,8 +28,8 @@ export function Customers() {
     .parse(searchParams.get("page") ?? "1");
 
   const { data: result } = useQuery({
-    queryKey: ["customers", pageIndex, customerName, email],
-    queryFn: () => getCustomers({ pageIndex, customerName, email }),
+    queryKey: ["customers", pageIndex, customerId, email, phone],
+    queryFn: () => getCustomers({ pageIndex, customerId, email, phone }),
   });
 
   function handlePaginate(pageIndex: number) {

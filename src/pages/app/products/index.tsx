@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useState } from "react";
 import {
   Table,
   TableHeader,
@@ -9,129 +9,48 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Helmet } from "react-helmet-async";
-import { ProductTableFilters } from "@/pages/app/products/components/product-table-filters";
+
 import { Pagination } from "@/components/pagination";
 import { ProductTableRow } from "@/pages/app/products/components/product-table-row";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { Product } from "@/types/Product";
-import { getProducts, getCategories, getSubBrands } from "@/lib/localStorage";
+
 import ProductCreateDialog from "@/pages/app/products/components/product-create-dialog";
 import { toast } from "sonner";
+import { useSearchParams } from "react-router-dom";
+import { getProducts, GetProductsResponse } from "@/api/get-products";
+import { z } from "zod";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export default function Products() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [filters, setFilters] = useState<{
-    searchTerm: string;
-    category: string;
-    subBrand: string;
-    status: string;
-  }>({
-    searchTerm: "",
-    category: "all",
-    subBrand: "all",
-    status: "all",
+
+  const productName = searchParams.get("productName");
+
+  const pageIndex = z.coerce
+    .number()
+    .transform((page) => page - 1)
+    .parse(searchParams.get("page") ?? "1");
+
+  const { data: result } = useQuery<GetProductsResponse>({
+    queryKey: ["products", pageIndex, productName],
+    queryFn: () => getProducts({ pageIndex, productName }),
   });
 
-  const [categories, setCategories] = useState<string[]>([]);
-  const [subBrands, setSubBrands] = useState<string[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const productsPerPage = 10;
-
-  useEffect(() => {
-    const fixExistingProducts = () => {
-      try {
-        const storedProducts = localStorage.getItem("products");
-        if (!storedProducts) return;
-
-        const parsedProducts = JSON.parse(storedProducts);
-
-        const correctedProducts = parsedProducts.map((product: Product) => ({
-          ...product,
-          createdAt: product.createdAt || new Date().toISOString(),
-          tags: product.tags || [],
-        }));
-
-        localStorage.setItem("products", JSON.stringify(correctedProducts));
-      } catch (error) {
-        console.error("Erro ao corrigir produtos:", error);
-      }
-    };
-
-    fixExistingProducts();
-  }, []);
-
-  // Carrega dados iniciais
-  useEffect(() => {
-    const loadData = () => {
-      try {
-        const loadedProducts = getProducts();
-        const loadedCategories = getCategories();
-        const loadedSubBrands = getSubBrands();
-
-        setProducts(loadedProducts);
-        setCategories(loadedCategories);
-        setSubBrands(loadedSubBrands);
-      } catch (error) {
-        console.error("Erro ao carregar dados:", error);
-        toast.error("Falha ao carregar dados");
-        setProducts([]);
-      }
-    };
-
-    loadData();
-  }, []);
-
-  // Filtra produtos com memoização
-  const filteredProducts = useMemo(() => {
-    const searchTerms = filters.searchTerm.toLowerCase().split(" ");
-
-    return products.filter((product) => {
-      const matchesSearch = searchTerms.every((term) => {
-        const searchContent = `
-          ${product.id}
-          ${product.name}
-          ${product.tags?.join(" ")}
-        `.toLowerCase();
-        return searchContent.includes(term);
-      });
-
-      const matchesCategory =
-        filters.category === "all" || product.category === filters.category;
-      const matchesSubBrand =
-        filters.subBrand === "all" || product.subBrand === filters.subBrand;
-      const matchesStatus =
-        filters.status === "all" || product.status === filters.status;
-
-      return (
-        matchesSearch && matchesCategory && matchesSubBrand && matchesStatus
-      );
+  function handlePaginate(pageIndex: number) {
+    setSearchParams((state) => {
+      state.set("page", (pageIndex + 1).toString());
+      return state;
     });
-  }, [filters, products]);
+  }
 
-  // Paginação
-  const indexOfLastProduct = currentPage * productsPerPage;
-  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-  const currentProducts = filteredProducts.slice(
-    indexOfFirstProduct,
-    indexOfLastProduct,
-  );
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  const refreshProducts = () => {
-    try {
-      const updatedProducts = getProducts();
-      setProducts(updatedProducts);
-      toast.success("Lista de produtos atualizada");
-    } catch (error) {
-      console.error("Erro ao atualizar produtos:", error);
-      toast.error("Falha ao atualizar produtos");
-    }
+  const queryClient = useQueryClient();
+  const refresh = () => {
+    queryClient.invalidateQueries({
+      queryKey: ["products"],
+    });
   };
 
   return (
@@ -143,15 +62,9 @@ export default function Products() {
         </h1>
 
         <div className="flex flex-col gap-4 sm:flex-row sm:justify-between">
-          <ProductTableFilters
-            onFilter={setFilters}
-            categories={categories}
-            setCategories={setCategories}
-            subBrands={subBrands}
-            setSubBrands={setSubBrands}
-          />
+          {/* <ProductTableFilters/> */}
 
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          {/* <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
               <Button variant="secondary" className="w-full sm:w-auto">
                 <Plus className="mr-2 h-4 w-4" />
@@ -163,13 +76,10 @@ export default function Products() {
               isOpen={isCreateOpen}
               onClose={() => {
                 setIsCreateOpen(false);
-                refreshProducts();
+                // refreshProducts();
               }}
-              refresh={refreshProducts}
-              categories={categories}
-              subBrands={subBrands}
             />
-          </Dialog>
+          </Dialog> */}
         </div>
 
         <div className="overflow-x-auto">
@@ -178,8 +88,8 @@ export default function Products() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[64px]"></TableHead>
-                  <TableHead className="w-[100px]">Imagem</TableHead>
-                  <TableHead className="w-[140px]">ID</TableHead>
+
+                  <TableHead className="w-[100x]">ID</TableHead>
                   <TableHead>Nome</TableHead>
                   <TableHead className="hidden w-[180px] sm:table-cell">
                     Categoria
@@ -197,25 +107,25 @@ export default function Products() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {currentProducts.map((product) => (
+                {result?.products.map((product) => (
                   <ProductTableRow
-                    key={product.id}
+                    key={product.productId}
                     product={product}
-                    refresh={refreshProducts}
+                    refresh={refresh}
                   />
                 ))}
               </TableBody>
             </Table>
           </div>
 
-          <div className="mt-2">
+          {result && (
             <Pagination
-              pageIndex={currentPage - 1}
-              totalCount={filteredProducts.length}
-              perPage={productsPerPage}
-              onPageChange={setCurrentPage}
+              onPageChange={handlePaginate}
+              pageIndex={result.meta.pageIndex}
+              totalCount={result.meta.totalCount}
+              perPage={result.meta.perPage}
             />
-          </div>
+          )}
         </div>
       </div>
     </>

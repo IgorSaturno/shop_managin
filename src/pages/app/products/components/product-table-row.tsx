@@ -12,40 +12,47 @@ import { Pencil, Search, Trash } from "lucide-react";
 import { ProductDetails } from "./product-details";
 import { useState } from "react";
 import ProductEditDetails from "./product-edit-details";
-import { Product } from "@/types/Product";
-import { getProducts, removeProduct } from "@/lib/localStorage";
+
 import { showToast } from "@/components/toast";
 
-const FALLBACK_IMAGE = "/placeholder-image.svg";
-
 interface ProductTableRowProps {
-  product: Product;
-  refresh: (products: Product[]) => void;
+  product: {
+    productId: string;
+    productName: string;
+    description: string;
+    priceInCents: number;
+    status: string;
+    stock: number;
+    sku: string;
+    isFeatured: boolean;
+    category?: string;
+    subBrand?: string;
+    tags?: string[];
+  };
+  refresh: () => void;
 }
 
 export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
-
-  const handleDelete = () => {
-    try {
-      removeProduct(product.id);
-      refresh(getProducts());
-      showToast("Produto removido com sucesso!");
-    } catch (error) {
-      showToast("Erro ao remover produto!", "error");
-    }
-  };
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   const handleEditSuccess = () => {
-    refresh(getProducts()); // Força atualização após edição
     setIsEditOpen(false);
+    refresh();
   };
 
+  const handleDelete = async () => {
+    try {
+      showToast("Produto removido com sucesso", "success");
+      setIsDeleteOpen(false);
+      refresh();
+    } catch {
+      showToast("Erro ao remover o produto", "error");
+    }
+  };
   return (
     <TableRow>
-      {/* Detalhes do Produto */}
-      <TableCell className="sm:w-[64px]">
+      {/* <TableCell className="sm:w-[64px]">
         <Dialog>
           <DialogTrigger asChild>
             <Button variant="outline" size="xs">
@@ -54,39 +61,24 @@ export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
             </Button>
           </DialogTrigger>
           <ProductDetails
-            key={product.id + Date.now()} // Força recarregar ao atualizar
-            productId={product.id}
+            key={product.productId}
+            productId={product.productId}
           />
         </Dialog>
-      </TableCell>
+      </TableCell> */}
 
-      {/* Imagem Principal */}
-      <TableCell className="sm:w-[100px]">
-        <img
-          src={product.imageUrl || FALLBACK_IMAGE}
-          alt={product.name}
-          className="h-10 w-10 rounded-md object-cover"
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.src = FALLBACK_IMAGE;
-            target.onerror = null; // Impede loop
-          }}
-        />
-      </TableCell>
-
-      {/* Demais Células */}
       <TableCell className="font-mono text-xs font-medium sm:w-[100px]">
-        {product.id}
+        {product.productId}
       </TableCell>
-      <TableCell className="font-medium">{product.name}</TableCell>
-      <TableCell className="hidden text-muted-foreground sm:table-cell sm:w-[180px]">
+      <TableCell className="font-medium">{product.productName}</TableCell>
+      {/* <TableCell className="hidden text-muted-foreground sm:table-cell sm:w-[180px]">
         {product.category || "Sem categoria"}
       </TableCell>
       <TableCell className="hidden text-muted-foreground sm:table-cell sm:w-[180px]">
         {product.subBrand || "Sem marca"}
-      </TableCell>
+      </TableCell> */}
 
-      <TableCell className="hidden sm:table-cell">
+      {/* <TableCell className="hidden sm:table-cell">
         <div className="flex flex-wrap gap-1">
           {Array.isArray(product.tags) &&
             product.tags.map((tag) => (
@@ -98,13 +90,17 @@ export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
               </span>
             ))}
         </div>
-      </TableCell>
+      </TableCell> */}
 
       <TableCell className="font-medium sm:w-[120px]">
-        {product.stock ?? 0} unidades
+        {product.stock} unidades
       </TableCell>
       <TableCell className="font-medium sm:w-[140px]">
-        R$ {product.price?.toFixed?.(2)?.replace(".", ",") ?? "0,00"}
+        R${" "}
+        {(product.priceInCents / 100).toLocaleString("pt-BR", {
+          style: "currency",
+          currency: "BRL",
+        })}
       </TableCell>
 
       {/* Status */}
@@ -122,7 +118,7 @@ export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
       </TableCell>
 
       {/* Botão de Edição */}
-      <TableCell className="sm:w-[132px]">
+      {/* <TableCell className="sm:w-[132px]">
         <div className="flex gap-2">
           <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
             <DialogTrigger asChild>
@@ -138,7 +134,7 @@ export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
             />
           </Dialog>
         </div>
-      </TableCell>
+      </TableCell> */}
 
       {/* Botão de Exclusão */}
       <TableCell className="sm:w-[132px]">

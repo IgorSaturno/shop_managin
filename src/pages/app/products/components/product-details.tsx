@@ -1,3 +1,5 @@
+import { GetProductDetials } from "@/api/get-product-details";
+import { getProducts } from "@/api/get-products";
 import {
   DialogContent,
   DialogDescription,
@@ -5,64 +7,27 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Product } from "@/types/Product";
-import { getProducts } from "@/lib/localStorage";
 
 const FALLBACK_IMAGE = "/placeholder-image.svg";
 
-interface ProductDetailsProps {
+export interface ProductDetailsProps {
   productId: string;
+  open: boolean;
 }
 
-export function ProductDetails({ productId }: ProductDetailsProps) {
-  const [product, setProduct] = useState<Product | null>(null);
-  const [selectedImage, setSelectedImage] = useState<string>(""); // Estado para a imagem selecionada
-
-  // Função para buscar e atualizar os detalhes do produto
-  const updateProductDetails = () => {
-    const products = getProducts();
-    const foundProduct = products.find((p) => p.id === productId);
-    setProduct(foundProduct || null);
-  };
-
-  useEffect(() => {
-    updateProductDetails(); // Busca o produto quando o componente é montado
-
-    const handleStorageChange = () => {
-      updateProductDetails();
-    };
-
-    // Adiciona um listener para o evento 'storage'
-    window.addEventListener("storage", handleStorageChange);
-
-    // Adiciona um listener para o evento 'localStorageChange' (custom)
-    window.addEventListener("localStorageChange", handleStorageChange);
-
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("localStorageChange", handleStorageChange);
-    };
-  }, [productId]);
-  // Atualiza a imagem selecionada quando o produto é carregado
-  useEffect(() => {
-    if (product) {
-      setSelectedImage(product.imageUrl || FALLBACK_IMAGE);
-    }
-  }, [product]);
-
-  if (!product) return <p>Produto não encontrado.</p>;
-
-  // Filtra imagens válidas (Modificado)
-  const productImages = (product?.images || [])
-    .filter((img) => typeof img === "string" && img.length > 0)
-    .concat(product?.imageUrl || FALLBACK_IMAGE)
-    .filter((v, i, a) => a.indexOf(v) === i); // Remove duplicatas
+export function ProductDetails({ productId, open }: ProductDetailsProps) {
+  const { data: product } = useQuery({
+    queryKey: ["product", productId],
+    queryFn: () => GetProductDetials({ productId }),
+    enabled: open,
+  });
 
   return (
     <DialogContent>
       <DialogHeader>
-        <DialogTitle>Produto: {product.name}</DialogTitle>
+        <DialogTitle>Produto: {product?.productName}</DialogTitle>
         <DialogDescription>Detalhes do produto</DialogDescription>
       </DialogHeader>
 
@@ -71,15 +36,15 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
           <TableBody>
             <TableRow>
               <TableCell className="text-muted-foreground">ID</TableCell>
-              <TableCell className="text-right">{product.id}</TableCell>
+              <TableCell className="text-right">{productId}</TableCell>
             </TableRow>
             <TableRow>
               <TableCell className="text-muted-foreground">Categoria</TableCell>
-              <TableCell className="text-right">{product.category}</TableCell>
+              <TableCell className="text-right">{product?.category}</TableCell>
             </TableRow>
             <TableRow>
               <TableCell className="text-muted-foreground">Marca</TableCell>
-              <TableCell className="text-right">{product.subBrand}</TableCell>
+              <TableCell className="text-right">{product?.subBrand}</TableCell>
             </TableRow>
             <TableRow>
               <TableCell className="text-muted-foreground">Tags</TableCell>
@@ -98,7 +63,9 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
             </TableRow>
             <TableRow>
               <TableCell className="text-muted-foreground">Preço</TableCell>
-              <TableCell className="text-right">R$ {product.price}</TableCell>
+              <TableCell className="text-right">
+                R$ {product.priceInCents}
+              </TableCell>
             </TableRow>
             <TableRow>
               <TableCell className="text-muted-foreground">Estoque</TableCell>

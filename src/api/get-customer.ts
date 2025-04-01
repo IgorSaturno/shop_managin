@@ -5,6 +5,7 @@ export interface GetCustomersQuery {
   customerId?: string | null;
   customerName?: string | null;
   email?: string | null;
+  phone?: string | null;
 }
 
 export interface GetCustomersResponse {
@@ -25,14 +26,18 @@ export interface GetCustomersResponse {
 
 export async function getCustomers({
   pageIndex,
+  customerId,
   customerName,
   email,
+  phone,
 }: GetCustomersQuery) {
   const response = await api.get<GetCustomersResponse>("/customers", {
     params: {
       pageIndex,
+      customerId,
       name: customerName,
       email,
+      phone,
     },
   });
 

@@ -12,7 +12,7 @@ import { SignIn } from "./pages/auth/sign-in";
 import { SignUp } from "./pages/auth/sign-up";
 
 import { Error } from "./pages/error";
-// import Products from "./pages/app/products";
+import Products from "./pages/app/products";
 // import { User } from "./pages/app/user";
 // import { Settings } from "./pages/app/settings";
 import { Customers } from "./pages/app/customers";
@@ -26,7 +26,7 @@ export const router = createBrowserRouter([
       // { path: "/overview", element: <Overview /> },
       { path: "/", element: <Dashboard /> },
       { path: "/orders", element: <Orders /> },
-      // { path: "/products", element: <Products /> },
+      { path: "/products", element: <Products /> },
       { path: "/customers", element: <Customers /> },
       // { path: "/user", element: <User /> },
       // { path: "/support", element: <Support /> },

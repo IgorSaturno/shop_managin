@@ -16,11 +16,16 @@ import { useQuery } from "@tanstack/react-query";
 import { getCustomerHistory } from "@/api/get-customer-history";
 
 export interface CustomerHistoryProps {
+  customerName: string;
   customerId: string;
   open: boolean;
 }
 
-export function CustomerHistory({ customerId, open }: CustomerHistoryProps) {
+export function CustomerHistory({
+  customerId,
+  open,
+  customerName,
+}: CustomerHistoryProps) {
   const { data: orders, isLoading } = useQuery({
     queryKey: ["customer-history", customerId],
     queryFn: () => getCustomerHistory({ customerId }),
@@ -31,7 +36,7 @@ export function CustomerHistory({ customerId, open }: CustomerHistoryProps) {
       <DialogHeader>
         <DialogTitle>Histórico</DialogTitle>
         <DialogDescription>
-          Histórico de compras do (nome do cliente)
+          Histórico de compras do {customerName}
         </DialogDescription>
       </DialogHeader>
       <div className="max-h-96 overflow-auto overflow-x-auto rounded-md border">

@@ -74,19 +74,16 @@ export function CustomerTableRow({ customer }: CustomerTableRowProps) {
         <div className="flex items-center gap-2">
           <Dialog>
             <DialogTrigger asChild>
-              <Button
-                variant="outline"
-                size="xs"
-                // onClick={() => {
-                // deleteClient(client.id);
-                //   refresh([]);
-                // }}
-              >
+              <Button variant="outline" size="xs">
                 <History className="mr-2 h-3 w-3" />
                 Histórico
               </Button>
             </DialogTrigger>
-            <CustomerHistory />
+            <CustomerHistory
+              customerId={customer.customerId}
+              customerName={customer.customerName}
+              open={true}
+            />
           </Dialog>
         </div>
       </TableCell>

@@ -18,6 +18,7 @@ export interface CustomerTableHistoryRowProps {
 export function CustomerTableHistoryRow({
   order,
 }: CustomerTableHistoryRowProps) {
+  console.log("Order ID passado para OrderDetails:", order.id);
   return (
     <TableRow>
       <TableCell className="sm:w-[64px]">
