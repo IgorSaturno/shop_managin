@@ -22,6 +22,7 @@ import { useSearchParams } from "react-router-dom";
 import { getProducts, GetProductsResponse } from "@/api/get-products";
 import { z } from "zod";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ProductTableFilters } from "./components/product-table-filters";
 
 export default function Products() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -62,7 +63,7 @@ export default function Products() {
         </h1>
 
         <div className="flex flex-col gap-4 sm:flex-row sm:justify-between">
-          {/* <ProductTableFilters/> */}
+          <ProductTableFilters />
 
           {/* <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>

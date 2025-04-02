@@ -21,7 +21,7 @@ interface ProductTableRowProps {
     productName: string;
     description: string;
     priceInCents: number;
-    status: string;
+    status: "available" | "unavailable" | "archived";
     stock: number;
     sku: string;
     isFeatured: boolean;
@@ -33,6 +33,7 @@ interface ProductTableRowProps {
 }
 
 export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
@@ -52,8 +53,8 @@ export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
   };
   return (
     <TableRow>
-      {/* <TableCell className="sm:w-[64px]">
-        <Dialog>
+      <TableCell className="sm:w-[64px]">
+        <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
           <DialogTrigger asChild>
             <Button variant="outline" size="xs">
               <Search className="h-3 w-3" />
@@ -63,40 +64,39 @@ export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
           <ProductDetails
             key={product.productId}
             productId={product.productId}
+            open={isDetailsOpen}
           />
         </Dialog>
-      </TableCell> */}
+      </TableCell>
 
       <TableCell className="font-mono text-xs font-medium sm:w-[100px]">
         {product.productId}
       </TableCell>
       <TableCell className="font-medium">{product.productName}</TableCell>
-      {/* <TableCell className="hidden text-muted-foreground sm:table-cell sm:w-[180px]">
-        {product.category || "Sem categoria"}
+      <TableCell className="hidden text-muted-foreground sm:table-cell sm:w-[180px]">
+        {product?.category}
       </TableCell>
       <TableCell className="hidden text-muted-foreground sm:table-cell sm:w-[180px]">
-        {product.subBrand || "Sem marca"}
-      </TableCell> */}
+        {product?.subBrand}
+      </TableCell>
 
-      {/* <TableCell className="hidden sm:table-cell">
+      <TableCell className="hidden sm:table-cell">
         <div className="flex flex-wrap gap-1">
-          {Array.isArray(product.tags) &&
-            product.tags.map((tag) => (
-              <span
-                key={tag}
-                className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600"
-              >
-                {tag}
-              </span>
-            ))}
+          {product?.tags?.map((tag) => (
+            <span
+              key={tag}
+              className="rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800"
+            >
+              {tag}
+            </span>
+          ))}
         </div>
-      </TableCell> */}
+      </TableCell>
 
       <TableCell className="font-medium sm:w-[120px]">
         {product.stock} unidades
       </TableCell>
       <TableCell className="font-medium sm:w-[140px]">
-        R${" "}
         {(product.priceInCents / 100).toLocaleString("pt-BR", {
           style: "currency",
           currency: "BRL",
@@ -108,7 +108,11 @@ export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
         <div className="flex items-center gap-2">
           <span
             className={`h-2 w-2 rounded-full ${
-              product.status === "Disponível" ? "bg-green-500" : "bg-red-500"
+              product.status === "available"
+                ? "bg-green-500"
+                : product.status === "archived"
+                  ? "bg-yellow-500"
+                  : "bg-red-500"
             }`}
           />
           <span className="font-medium text-muted-foreground">

@@ -1,27 +1,27 @@
 import { api } from "@/lib/axios";
 
-export interface GetProductDetialsParams {
+export interface GetProductDetailsParams {
   productId: string;
 }
 
-export interface GetProductDetialsResponse {
+export interface GetProductDetailsResponse {
   productId: string;
   productName: string;
   description: string;
-  price: string;
+  priceInCents: number;
   stock: number;
   sku: string;
   category: string;
   subBrand: string;
   tags: string[];
-  status: string;
+  status: "available" | "unavailable" | "archived";
   images: string[];
 }
 
-export async function GetProductDetials({
+export async function GetProductDetails({
   productId,
-}: GetProductDetialsParams) {
-  const response = await api.get<GetProductDetialsResponse>(
+}: GetProductDetailsParams) {
+  const response = await api.get<GetProductDetailsResponse>(
     `/products/${productId}`,
   );
   return response.data;

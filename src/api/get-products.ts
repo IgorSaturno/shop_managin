@@ -3,21 +3,25 @@ import { api } from "@/lib/axios";
 export interface GetProductsQuery {
   productName?: string | null;
   pageIndex?: number;
-}
-
-export interface Product {
-  productId: string;
-  productName: string;
-  description: string;
-  priceInCents: number;
-  stock: number;
-  sku: string;
-  isFeatured: boolean;
-  status: string;
+  productId?: string | null;
+  status?: string | null;
 }
 
 export interface GetProductsResponse {
-  products: Product[];
+  products: {
+    productId: string;
+    productName: string;
+    priceInCents: number;
+    category: string;
+    subBrand: string;
+    tags: string[];
+    stock: number;
+    sku: string;
+    isFeatured: boolean;
+    status: "available" | "unavailable" | "archived";
+    createdAt: string;
+    description: string;
+  }[];
   meta: {
     pageIndex: number;
     perPage: number;
@@ -26,11 +30,13 @@ export interface GetProductsResponse {
 }
 
 export async function getProducts({
+  pageIndex,
+  productId,
   productName,
-  pageIndex = 0,
+  status,
 }: GetProductsQuery) {
   const response = await api.get<GetProductsResponse>("/products", {
-    params: { productName, pageIndex },
+    params: { productName, pageIndex, status, productId },
   });
   return response.data;
 }
