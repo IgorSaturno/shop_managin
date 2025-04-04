@@ -94,6 +94,14 @@ export function ProductDetails({ productId, open }: ProductDetailsProps) {
                 </TableCell>
               </TableRow>
               <TableRow>
+                <TableCell className="text-muted-foreground">
+                  Criado há
+                </TableCell>
+                <TableCell className="text-right">
+                  {product?.stock} unidades
+                </TableCell>
+              </TableRow>
+              <TableRow>
                 <TableCell className="text-muted-foreground">Status</TableCell>
                 <TableCell className="flex justify-end">
                   <div className="flex items-center gap-2">

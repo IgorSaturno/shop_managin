@@ -29,6 +29,11 @@ export default function Products() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   const productName = searchParams.get("productName");
+  const productId = searchParams.get("productId");
+  const status = searchParams.get("status");
+  const category = searchParams.get("category");
+  const subBrand = searchParams.get("subBrand");
+  const tags = searchParams.get("tags");
 
   const pageIndex = z.coerce
     .number()
@@ -36,8 +41,26 @@ export default function Products() {
     .parse(searchParams.get("page") ?? "1");
 
   const { data: result } = useQuery<GetProductsResponse>({
-    queryKey: ["products", pageIndex, productName],
-    queryFn: () => getProducts({ pageIndex, productName }),
+    queryKey: [
+      "products",
+      pageIndex,
+      productName,
+      productId,
+      status,
+      category,
+      subBrand,
+      tags,
+    ],
+    queryFn: () =>
+      getProducts({
+        pageIndex,
+        productName,
+        productId,
+        status: status === "all" ? null : status,
+        category,
+        subBrand,
+        tags,
+      }),
   });
 
   function handlePaginate(pageIndex: number) {

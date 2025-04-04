@@ -5,6 +5,9 @@ export interface GetProductsQuery {
   pageIndex?: number;
   productId?: string | null;
   status?: string | null;
+  category?: string | null;
+  subBrand?: string | null;
+  tags?: string[] | null;
 }
 
 export interface GetProductsResponse {
@@ -12,8 +15,8 @@ export interface GetProductsResponse {
     productId: string;
     productName: string;
     priceInCents: number;
-    category: string;
-    subBrand: string;
+    categoryName: string;
+    brandName: string;
     tags: string[];
     stock: number;
     sku: string;
@@ -34,9 +37,30 @@ export async function getProducts({
   productId,
   productName,
   status,
+  category,
+  subBrand,
+  tags,
 }: GetProductsQuery) {
   const response = await api.get<GetProductsResponse>("/products", {
-    params: { productName, pageIndex, status, productId },
+    params: {
+      productName,
+      pageIndex,
+      status,
+      productId,
+      category,
+      subBrand,
+      tags,
+    },
   });
-  return response.data;
+
+  const mappedProducts = response.data.products.map((product) => ({
+    ...product,
+    category: product.categoryName,
+    subBrand: product.brandName,
+  }));
+
+  return {
+    ...response.data,
+    products: mappedProducts,
+  };
 }

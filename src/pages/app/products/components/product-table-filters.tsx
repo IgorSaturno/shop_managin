@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -80,6 +80,14 @@ export function ProductTableFilters() {
     category,
     subBrand,
   }: ProductFiltersSchema) {
+    console.log("Filtrando com:", {
+      productId,
+      productName,
+      tags,
+      status,
+      category,
+      subBrand,
+    });
     setSearchParams((state) => {
       if (productId) {
         state.set("productId", productId);
@@ -115,6 +123,10 @@ export function ProductTableFilters() {
       return state;
     });
   }
+
+  useEffect(() => {
+    console.log("SearchParams atualizados:", searchParams.toString());
+  }, [searchParams]);
 
   function handleClearFilters() {
     setSearchParams((state) => {
@@ -208,17 +220,17 @@ export function ProductTableFilters() {
       <div className="grid grid-cols-1 gap-2 sm:flex sm:items-center sm:gap-2">
         <Input
           placeholder="ID do produto"
-          className="h-8 w-full"
+          className="h-8 w-auto"
           {...register("productId")}
         />
         <Input
           placeholder="Nome do produto"
-          className="h-8 w-full"
+          className="h-8 w-auto"
           {...register("productName")}
         />
         <Input
           placeholder="Tags associadas"
-          className="h-8 w-full"
+          className="h-8 w-auto"
           {...register("tags")}
         />
 
@@ -233,7 +245,7 @@ export function ProductTableFilters() {
               value={value}
               disabled={disabled}
             >
-              <SelectTrigger className="h-8 w-full sm:w-[180px]">
+              <SelectTrigger className="h-8 w-[180px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
