@@ -16,6 +16,7 @@ export interface GetProductDetailsResponse {
   tags: string[];
   status: "available" | "unavailable" | "archived";
   images: string[];
+  createdAt: string;
 }
 
 export async function GetProductDetails({

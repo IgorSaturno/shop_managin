@@ -17,12 +17,10 @@ import {
 import { ImageUpload } from "@/components/ImageUpload";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Product } from "@/types/Product";
-import { saveProduct, getProducts } from "@/lib/localStorage";
+
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { TagsInput } from "@/components/TagsInput";
-import { getTags } from "@/lib/localStorage";
 
 interface ProductCreateDialogProps {
   onClose: () => void;

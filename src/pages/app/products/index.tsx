@@ -33,7 +33,7 @@ export default function Products() {
   const status = searchParams.get("status");
   const category = searchParams.get("category");
   const subBrand = searchParams.get("subBrand");
-  const tags = searchParams.get("tags");
+  const tags = searchParams.get("tags")?.split(",") || null;
 
   const pageIndex = z.coerce
     .number()

@@ -14,6 +14,9 @@ import { useState } from "react";
 import ProductEditDetails from "./product-edit-details";
 
 import { showToast } from "@/components/toast";
+import { api } from "@/lib/axios";
+import { useQuery } from "@tanstack/react-query";
+import { deleteProduct } from "@/api/delete-product";
 
 interface ProductTableRowProps {
   product: {
@@ -25,8 +28,8 @@ interface ProductTableRowProps {
     stock: number;
     sku: string;
     isFeatured: boolean;
-    category?: string;
-    subBrand?: string;
+    categoryId: string; // ID da categoria (vindo do backend)
+    brandId: string; // ID da marca (vindo do backend)
     tags?: string[];
   };
   refresh: () => void;
@@ -37,6 +40,31 @@ export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
+  const { data: categories } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const response =
+        await api.get<Array<{ value: string; label: string }>>("/categories");
+      return response.data;
+    },
+  });
+
+  // Buscar lista de marcas
+  const { data: brands } = useQuery({
+    queryKey: ["brands"],
+    queryFn: async () => {
+      const response =
+        await api.get<Array<{ value: string; label: string }>>("/brands");
+      return response.data;
+    },
+  });
+
+  const categoryName =
+    categories?.find((category) => category.value === product.categoryId)
+      ?.label || "N/A";
+  const brandName =
+    brands?.find((brand) => brand.value === product.brandId)?.label || "N/A";
+
   const handleEditSuccess = () => {
     setIsEditOpen(false);
     refresh();
@@ -44,11 +72,13 @@ export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
 
   const handleDelete = async () => {
     try {
+      await deleteProduct(product.productId); // Chamada via endpoint dedicado
       showToast("Produto removido com sucesso", "success");
       setIsDeleteOpen(false);
       refresh();
-    } catch {
+    } catch (error) {
       showToast("Erro ao remover o produto", "error");
+      console.error("Erro ao deletar produto:", error);
     }
   };
   return (
@@ -74,10 +104,10 @@ export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
       </TableCell>
       <TableCell className="font-medium">{product.productName}</TableCell>
       <TableCell className="hidden text-muted-foreground sm:table-cell sm:w-[180px]">
-        {product?.category}
+        {categoryName}
       </TableCell>
       <TableCell className="hidden text-muted-foreground sm:table-cell sm:w-[180px]">
-        {product?.subBrand}
+        {brandName}
       </TableCell>
 
       <TableCell className="hidden sm:table-cell">

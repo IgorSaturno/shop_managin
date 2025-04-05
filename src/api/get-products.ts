@@ -15,8 +15,8 @@ export interface GetProductsResponse {
     productId: string;
     productName: string;
     priceInCents: number;
-    categoryName: string;
-    brandName: string;
+    categoryId: string; // Alterado para ID
+    subBrandId: string; // Alterado para ID
     tags: string[];
     stock: number;
     sku: string;
@@ -33,7 +33,7 @@ export interface GetProductsResponse {
 }
 
 export async function getProducts({
-  pageIndex,
+  pageIndex = 0,
   productId,
   productName,
   status,
@@ -45,22 +45,13 @@ export async function getProducts({
     params: {
       productName,
       pageIndex,
-      status,
       productId,
-      category,
-      subBrand,
-      tags,
+      status: status !== "all" ? status : undefined,
+      category: category !== "all" ? category : undefined,
+      subBrand: subBrand !== "all" ? subBrand : undefined,
+      tags: tags?.join(","), // Converte array para string separada por vírgulas
     },
   });
 
-  const mappedProducts = response.data.products.map((product) => ({
-    ...product,
-    category: product.categoryName,
-    subBrand: product.brandName,
-  }));
-
-  return {
-    ...response.data,
-    products: mappedProducts,
-  };
+  return response.data;
 }

@@ -22,6 +22,8 @@ import { z } from "zod";
 import { useSearchParams } from "react-router-dom";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/axios";
 
 const productFiltersSchema = z.object({
   productId: z.string().optional(),
@@ -32,7 +34,18 @@ const productFiltersSchema = z.object({
   subBrand: z.string().optional(),
 });
 
+type FilterOption = { value: string; label: string };
 type ProductFiltersSchema = z.infer<typeof productFiltersSchema>;
+
+async function fetchCategories(): Promise<FilterOption[]> {
+  const response = await api.get<FilterOption[]>("/categories");
+  return response.data;
+}
+
+async function fetchBrands(): Promise<FilterOption[]> {
+  const response = await api.get<FilterOption[]>("/brands");
+  return response.data;
+}
 
 export function ProductTableFilters() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -44,20 +57,27 @@ export function ProductTableFilters() {
   const categoryParam = searchParams.get("category") || "all";
   const subBrandParam = searchParams.get("subBrand") || "all";
 
-  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
-  const [isSubBrandModalOpen, setIsSubBrandModalOpen] = useState(false);
-  const [isTagsModalOpen, setIsTagsModalOpen] = useState(false);
+  // const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  // const [isSubBrandModalOpen, setIsSubBrandModalOpen] = useState(false);
+  // const [isTagsModalOpen, setIsTagsModalOpen] = useState(false);
 
-  const [newCategory, setNewCategory] = useState("");
-  const [newSubBrand, setNewSubBrand] = useState("");
-  const [newTag, setNewTag] = useState("");
-  const [categories, setCategories] = useState<string[]>([
-    "Eletrônicos",
-    "Roupas",
-    "Livros",
-  ]);
-  const [subBrands, setSubBrands] = useState<string[]>(["Marca A", "Marca B"]);
-  const [tags, setTags] = useState<string[]>(["Promoção", "Lançamento"]);
+  // const [newCategory, setNewCategory] = useState("");
+  // const [newSubBrand, setNewSubBrand] = useState("");
+  // const [newTag, setNewTag] = useState("");
+
+  const { data: categoriesOptions } = useQuery<FilterOption[]>({
+    queryKey: ["categories"],
+    queryFn: fetchCategories,
+  });
+
+  const { data: brandsOptions } = useQuery<FilterOption[]>({
+    queryKey: ["brands"],
+    queryFn: fetchBrands,
+  });
+
+  // const [categories, setCategories] = useState<FilterOption[]>([]);
+  // const [subBrands, setSubBrands] = useState<FilterOption[]>([]);
+  // const [tags, setTags] = useState<FilterOption[]>([]);
 
   const { register, handleSubmit, control, reset } =
     useForm<ProductFiltersSchema>({
@@ -150,65 +170,65 @@ export function ProductTableFilters() {
     toast.success("Filtros resetados");
   }
 
-  const addCategory = () => {
-    const trimmed = newCategory.trim();
-    if (!trimmed) {
-      toast.warning("Digite um nome para a categoria");
-      return;
-    }
-    if (categories.includes(trimmed)) {
-      toast.warning("Esta categoria já existe");
-      return;
-    }
-    setCategories((prev) => [...prev, trimmed]);
-    setNewCategory("");
-    toast.success("Categoria adicionada com sucesso");
-  };
+  // const addCategory = () => {
+  //   const trimmed = newCategory.trim();
+  //   if (!trimmed) {
+  //     toast.warning("Digite um nome para a categoria");
+  //     return;
+  //   }
+  //   if (categories.includes(trimmed)) {
+  //     toast.warning("Esta categoria já existe");
+  //     return;
+  //   }
+  //   setCategories((prev) => [...prev, trimmed]);
+  //   setNewCategory("");
+  //   toast.success("Categoria adicionada com sucesso");
+  // };
 
-  const removeCategory = (cat: string) => {
-    setCategories((prev) => prev.filter((c) => c !== cat));
-    toast.success("Categoria removida");
-  };
+  // const removeCategory = (cat: string) => {
+  //   setCategories((prev) => prev.filter((c) => c !== cat));
+  //   toast.success("Categoria removida");
+  // };
 
-  const addSubBrand = () => {
-    const trimmed = newSubBrand.trim();
-    if (!trimmed) {
-      toast.warning("Digite um nome para a marca");
-      return;
-    }
-    if (subBrands.includes(trimmed)) {
-      toast.warning("Esta marca já existe");
-      return;
-    }
-    setSubBrands((prev) => [...prev, trimmed]);
-    setNewSubBrand("");
-    toast.success("Marca adicionada com sucesso");
-  };
+  // const addSubBrand = () => {
+  //   const trimmed = newSubBrand.trim();
+  //   if (!trimmed) {
+  //     toast.warning("Digite um nome para a marca");
+  //     return;
+  //   }
+  //   if (subBrands.includes(trimmed)) {
+  //     toast.warning("Esta marca já existe");
+  //     return;
+  //   }
+  //   setSubBrands((prev) => [...prev, trimmed]);
+  //   setNewSubBrand("");
+  //   toast.success("Marca adicionada com sucesso");
+  // };
 
-  const removeSubBrand = (sb: string) => {
-    setSubBrands((prev) => prev.filter((s) => s !== sb));
-    toast.success("Marca removida");
-  };
+  // const removeSubBrand = (sb: string) => {
+  //   setSubBrands((prev) => prev.filter((s) => s !== sb));
+  //   toast.success("Marca removida");
+  // };
 
-  const addTag = () => {
-    const trimmed = newTag.trim().toLowerCase();
-    if (!trimmed) {
-      toast.warning("Digite um nome para a tag");
-      return;
-    }
-    if (tags.includes(trimmed)) {
-      toast.warning("Esta tag já existe");
-      return;
-    }
-    setTags((prev) => [...prev, trimmed]);
-    setNewTag("");
-    toast.success("Tag adicionada com sucesso");
-  };
+  // const addTag = () => {
+  //   const trimmed = newTag.trim().toLowerCase();
+  //   if (!trimmed) {
+  //     toast.warning("Digite um nome para a tag");
+  //     return;
+  //   }
+  //   if (tags.includes(trimmed)) {
+  //     toast.warning("Esta tag já existe");
+  //     return;
+  //   }
+  //   setTags((prev) => [...prev, trimmed]);
+  //   setNewTag("");
+  //   toast.success("Tag adicionada com sucesso");
+  // };
 
-  const removeTag = (tag: string) => {
-    setTags((prev) => prev.filter((t) => t !== tag));
-    toast.success("Tag removida");
-  };
+  // const removeTag = (tag: string) => {
+  //   setTags((prev) => prev.filter((t) => t !== tag));
+  //   toast.success("Tag removida");
+  // };
 
   return (
     <form
@@ -230,7 +250,7 @@ export function ProductTableFilters() {
         />
         <Input
           placeholder="Tags associadas"
-          className="h-8 w-auto"
+          className="h-8 w-[130px]"
           {...register("tags")}
         />
 
@@ -269,23 +289,23 @@ export function ProductTableFilters() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas categorias</SelectItem>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat}
+                  {categoriesOptions?.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             )}
           />
-          <Button
+          {/* <Button
             type="button"
             variant="outline"
             size="xs"
             onClick={() => setIsCategoryModalOpen(true)}
           >
             Gerenciar
-          </Button>
+          </Button> */}
         </div>
 
         <div className="flex gap-2">
@@ -299,23 +319,23 @@ export function ProductTableFilters() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas as marcas</SelectItem>
-                  {subBrands.map((sb) => (
-                    <SelectItem key={sb} value={sb}>
-                      {sb}
+                  {brandsOptions?.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             )}
           />
-          <Button
+          {/* <Button
             type="button"
             variant="outline"
             size="xs"
             onClick={() => setIsSubBrandModalOpen(true)}
           >
             Gerenciar
-          </Button>
+          </Button> */}
         </div>
       </div>
 
@@ -341,7 +361,7 @@ export function ProductTableFilters() {
         </Button>
       </div>
 
-      <Dialog open={isTagsModalOpen} onOpenChange={setIsTagsModalOpen}>
+      {/* <Dialog open={isTagsModalOpen} onOpenChange={setIsTagsModalOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Gerenciar Tags</DialogTitle>
@@ -457,7 +477,7 @@ export function ProductTableFilters() {
             )}
           </div>
         </DialogContent>
-      </Dialog>
+      </Dialog> */}
     </form>
   );
 }

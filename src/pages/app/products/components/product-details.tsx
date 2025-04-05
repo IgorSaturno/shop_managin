@@ -8,6 +8,8 @@ import {
 } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { useEffect, useState } from "react";
 
 const FALLBACK_IMAGE = "/placeholder-image.svg";
@@ -15,13 +17,18 @@ const FALLBACK_IMAGE = "/placeholder-image.svg";
 export interface ProductDetailsProps {
   productId: string;
   open: boolean;
+  createdAt?: string;
 }
 
-export function ProductDetails({ productId, open }: ProductDetailsProps) {
+export function ProductDetails({
+  productId,
+  open,
+  createdAt,
+}: ProductDetailsProps) {
   const [selectedImage, setSelectedImage] = useState<string>(FALLBACK_IMAGE);
 
   const { data: product } = useQuery({
-    queryKey: ["product", productId],
+    queryKey: ["product", productId, createdAt],
     queryFn: () => GetProductDetails({ productId }),
     enabled: open,
   });
@@ -95,10 +102,12 @@ export function ProductDetails({ productId, open }: ProductDetailsProps) {
               </TableRow>
               <TableRow>
                 <TableCell className="text-muted-foreground">
-                  Criado há
+                  Criado em
                 </TableCell>
                 <TableCell className="text-right">
-                  {product?.stock} unidades
+                  {format(new Date(product?.createdAt), "dd/MM/yyyy", {
+                    locale: ptBR,
+                  })}
                 </TableCell>
               </TableRow>
               <TableRow>
