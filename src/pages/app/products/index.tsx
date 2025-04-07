@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+// import { useState } from "react";
 import {
   Table,
   TableHeader,
@@ -12,12 +12,12 @@ import { Helmet } from "react-helmet-async";
 
 import { Pagination } from "@/components/pagination";
 import { ProductTableRow } from "@/pages/app/products/components/product-table-row";
-import { Dialog, DialogTrigger } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+// import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+// import { Button } from "@/components/ui/button";
+// import { Plus } from "lucide-react";
 
-import ProductCreateDialog from "@/pages/app/products/components/product-create-dialog";
-import { toast } from "sonner";
+// import ProductCreateDialog from "@/pages/app/products/components/product-create-dialog";
+// import { toast } from "sonner";
 import { useSearchParams } from "react-router-dom";
 import { getProducts, GetProductsResponse } from "@/api/get-products";
 import { z } from "zod";
@@ -26,13 +26,13 @@ import { ProductTableFilters } from "./components/product-table-filters";
 
 export default function Products() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  // const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   const productName = searchParams.get("productName");
   const productId = searchParams.get("productId");
   const status = searchParams.get("status");
   const category = searchParams.get("category");
-  const subBrand = searchParams.get("subBrand");
+  const brandId = searchParams.get("brandId");
   const tags = searchParams.get("tags")?.split(",") || null;
 
   const pageIndex = z.coerce
@@ -48,7 +48,7 @@ export default function Products() {
       productId,
       status,
       category,
-      subBrand,
+      brandId,
       tags,
     ],
     queryFn: () =>
@@ -58,7 +58,7 @@ export default function Products() {
         productId,
         status: status === "all" ? null : status,
         category,
-        subBrand,
+        brandId,
         tags,
       }),
   });

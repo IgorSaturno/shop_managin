@@ -8,10 +8,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { TableCell, TableRow } from "@/components/ui/table";
-import { Pencil, Search, Trash } from "lucide-react";
+import { Search, Trash } from "lucide-react";
 import { ProductDetails } from "./product-details";
 import { useState } from "react";
-import ProductEditDetails from "./product-edit-details";
+// import ProductEditDetails from "./product-edit-details";
 
 import { showToast } from "@/components/toast";
 import { api } from "@/lib/axios";
@@ -112,9 +112,9 @@ export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
 
       <TableCell className="hidden sm:table-cell">
         <div className="flex flex-wrap gap-1">
-          {product?.tags?.map((tag) => (
+          {product?.tags?.map((tag, index) => (
             <span
-              key={tag}
+              key={`${product.productId}-${tag}-${index}`}
               className="rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800"
             >
               {tag}

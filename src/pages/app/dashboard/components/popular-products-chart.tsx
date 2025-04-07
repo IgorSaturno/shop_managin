@@ -51,12 +51,19 @@ export function PopularProductsChart() {
                   innerRadius,
                   outerRadius,
                   value,
-                  index,
+
+                  payload,
                 }) => {
                   const RADIAN = Math.PI / 180;
                   const radius = 12 + innerRadius + (outerRadius - innerRadius);
                   const x = cx + radius * Math.cos(-midAngle * RADIAN);
                   const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+                  const productName = payload.product || "Produto desconhecido";
+                  const displayName =
+                    productName.length > 12
+                      ? `${productName.substring(0, 12)}...`
+                      : productName;
 
                   return (
                     <text
@@ -66,12 +73,7 @@ export function PopularProductsChart() {
                       textAnchor={x > cx ? "start" : "end"}
                       dominantBaseline="central"
                     >
-                      {popularProducts[index].product.length > 12
-                        ? popularProducts[index].product
-                            .substring(0, 12)
-                            .concat("...")
-                        : popularProducts[index].product}{" "}
-                      ({value})
+                      {displayName} ({value})
                     </text>
                   );
                 }}
@@ -80,7 +82,7 @@ export function PopularProductsChart() {
                   return (
                     <Cell
                       key={`cell-${index}`}
-                      fill={COLORS[index]}
+                      fill={COLORS[index % COLORS.length]}
                       className="stroke-background hover:opacity-80"
                     />
                   );

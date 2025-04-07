@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -16,14 +16,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
 import { toast } from "sonner";
 import { z } from "zod";
 import { useSearchParams } from "react-router-dom";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/axios";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { createCategory, listCategories } from "@/api/create-category";
+import { createBrand, listBrands } from "@/api/create-brand";
+import { createTag, listTags } from "@/api/create-tag";
+import { deleteCategory } from "@/api/delete-category";
+import { deleteBrand } from "@/api/delete-brand";
+import { deleteTag } from "@/api/delete.tag";
 
 const productFiltersSchema = z.object({
   productId: z.string().optional(),
@@ -31,209 +35,191 @@ const productFiltersSchema = z.object({
   tags: z.string().optional(),
   status: z.string().optional(),
   category: z.string().optional(),
-  subBrand: z.string().optional(),
+  brandId: z.string().optional(),
 });
 
-type FilterOption = { value: string; label: string };
 type ProductFiltersSchema = z.infer<typeof productFiltersSchema>;
 
-async function fetchCategories(): Promise<FilterOption[]> {
-  const response = await api.get<FilterOption[]>("/categories");
-  return response.data;
-}
-
-async function fetchBrands(): Promise<FilterOption[]> {
-  const response = await api.get<FilterOption[]>("/brands");
-  return response.data;
-}
-
 export function ProductTableFilters() {
+  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const productId = searchParams.get("productId") || "";
-  const productName = searchParams.get("productName") || "";
-  const tagsParam = searchParams.get("tags") || "";
-  const statusParam = searchParams.get("status") || "all";
-  const categoryParam = searchParams.get("category") || "all";
-  const subBrandParam = searchParams.get("subBrand") || "all";
+  // Estados
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [isBrandModalOpen, setIsBrandModalOpen] = useState(false);
+  const [isTagsModalOpen, setIsTagsModalOpen] = useState(false);
+  const [newCategory, setNewCategory] = useState("");
+  const [newBrand, setNewBrand] = useState("");
+  const [newTag, setNewTag] = useState("");
 
-  // const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
-  // const [isSubBrandModalOpen, setIsSubBrandModalOpen] = useState(false);
-  // const [isTagsModalOpen, setIsTagsModalOpen] = useState(false);
-
-  // const [newCategory, setNewCategory] = useState("");
-  // const [newSubBrand, setNewSubBrand] = useState("");
-  // const [newTag, setNewTag] = useState("");
-
-  const { data: categoriesOptions } = useQuery<FilterOption[]>({
+  // Queries
+  const { data: categoriesOptions } = useQuery({
     queryKey: ["categories"],
-    queryFn: fetchCategories,
+    queryFn: async () => {
+      const data = await listCategories();
+      return data
+        .filter((category) => category.category_id && category.category_name)
+        .map((category) => ({
+          value: category.category_id,
+          label: category.category_name,
+        }));
+    },
   });
 
-  const { data: brandsOptions } = useQuery<FilterOption[]>({
+  const { data: brandsOptions } = useQuery({
     queryKey: ["brands"],
-    queryFn: fetchBrands,
+    queryFn: async () => {
+      const data = await listBrands();
+      return data
+        .filter((brand) => brand.brand_id && brand.brand_name)
+        .map((brand) => ({
+          value: brand.brand_id,
+          label: brand.brand_name,
+        }));
+    },
   });
 
-  // const [categories, setCategories] = useState<FilterOption[]>([]);
-  // const [subBrands, setSubBrands] = useState<FilterOption[]>([]);
-  // const [tags, setTags] = useState<FilterOption[]>([]);
+  const { data: tagsOptions } = useQuery({
+    queryKey: ["tags"],
+    queryFn: async () => {
+      const data = await listTags();
+      return data
+        .filter((tag) => tag.id && tag.tag_name)
+        .map((tag) => ({
+          value: tag.id,
+          label: tag.tag_name,
+        }));
+    },
+  });
 
   const { register, handleSubmit, control, reset } =
     useForm<ProductFiltersSchema>({
       resolver: zodResolver(productFiltersSchema),
       defaultValues: {
-        productId,
-        productName,
-        tags: tagsParam,
-        status: statusParam,
-        category: categoryParam,
-        subBrand: subBrandParam,
+        productId: searchParams.get("productId") || "",
+        productName: searchParams.get("productName") || "",
+        tags: searchParams.get("tags") || "all",
+        status: searchParams.get("status") || "all",
+        category: searchParams.get("category") || "all",
+        brandId: searchParams.get("brandId") || "all",
       },
     });
 
-  function handleFilter({
-    productId,
-    productName,
-    tags,
-    status,
-    category,
-    subBrand,
-  }: ProductFiltersSchema) {
-    console.log("Filtrando com:", {
-      productId,
-      productName,
-      tags,
-      status,
-      category,
-      subBrand,
-    });
+  const handleFilter = (data: ProductFiltersSchema) => {
+    console.log("Valores do filtro:", data);
     setSearchParams((state) => {
-      if (productId) {
-        state.set("productId", productId);
-      } else {
-        state.delete("productId");
-      }
-      if (productName) {
-        state.set("productName", productName);
-      } else {
-        state.delete("productName");
-      }
-      if (tags) {
-        state.set("tags", tags);
-      } else {
-        state.delete("tags");
-      }
-      if (status && status !== "all") {
-        state.set("status", status);
-      } else {
-        state.delete("status");
-      }
-      if (category && category !== "all") {
-        state.set("category", category);
-      } else {
-        state.delete("category");
-      }
-      if (subBrand && subBrand !== "all") {
-        state.set("subBrand", subBrand);
-      } else {
-        state.delete("subBrand");
-      }
+      Object.entries(data).forEach(([key, value]) => {
+        if (key === "brandId") {
+          // Trata o campo de marca separadamente
+          value && value !== "all"
+            ? state.set("brandId", value) // Usa "brandId" na URL
+            : state.delete("brandId");
+        } else {
+          value && value !== "all" ? state.set(key, value) : state.delete(key);
+        }
+      });
+
       state.set("page", "1");
       return state;
     });
-  }
+  };
 
-  useEffect(() => {
-    console.log("SearchParams atualizados:", searchParams.toString());
-  }, [searchParams]);
-
-  function handleClearFilters() {
+  const handleClearFilters = () => {
     setSearchParams((state) => {
-      state.delete("productId");
-      state.delete("productName");
-      state.delete("tags");
-      state.delete("status");
-      state.delete("category");
-      state.delete("subBrand");
+      [
+        "productId",
+        "productName",
+        "tags",
+        "status",
+        "category",
+        "brandId",
+      ].forEach((key) => state.delete(key));
       state.set("page", "1");
       return state;
     });
-    reset({
-      productId: "",
-      productName: "",
-      tags: "",
-      status: "all",
-      category: "all",
-      subBrand: "all",
-    });
+    reset();
     toast.success("Filtros resetados");
-  }
+  };
 
-  // const addCategory = () => {
-  //   const trimmed = newCategory.trim();
-  //   if (!trimmed) {
-  //     toast.warning("Digite um nome para a categoria");
-  //     return;
-  //   }
-  //   if (categories.includes(trimmed)) {
-  //     toast.warning("Esta categoria já existe");
-  //     return;
-  //   }
-  //   setCategories((prev) => [...prev, trimmed]);
-  //   setNewCategory("");
-  //   toast.success("Categoria adicionada com sucesso");
-  // };
+  const handleCreateCategory = async () => {
+    if (!newCategory.trim()) {
+      toast.warning("Digite um nome para a categoria");
+      return;
+    }
+    try {
+      await createCategory(newCategory);
+      toast.success("Categoria criada!");
+      setNewCategory("");
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+    } catch (error) {
+      toast.error("Erro ao criar categoria");
+    }
+  };
 
-  // const removeCategory = (cat: string) => {
-  //   setCategories((prev) => prev.filter((c) => c !== cat));
-  //   toast.success("Categoria removida");
-  // };
+  const handleDeleteCategory = async (categoryId: string) => {
+    try {
+      await deleteCategory(categoryId);
+      toast.success("Categoria removida!");
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+    } catch (error) {
+      toast.error("Erro ao remover categoria");
+    }
+  };
 
-  // const addSubBrand = () => {
-  //   const trimmed = newSubBrand.trim();
-  //   if (!trimmed) {
-  //     toast.warning("Digite um nome para a marca");
-  //     return;
-  //   }
-  //   if (subBrands.includes(trimmed)) {
-  //     toast.warning("Esta marca já existe");
-  //     return;
-  //   }
-  //   setSubBrands((prev) => [...prev, trimmed]);
-  //   setNewSubBrand("");
-  //   toast.success("Marca adicionada com sucesso");
-  // };
+  const handleCreateBrand = async () => {
+    if (!newBrand.trim()) {
+      toast.warning("Digite um nome para a marca");
+      return;
+    }
+    try {
+      await createBrand(newBrand);
+      toast.success("Marca criada!");
+      setNewBrand("");
+      queryClient.invalidateQueries({ queryKey: ["brands"] });
+    } catch (error) {
+      toast.error("Erro ao criar marca");
+    }
+  };
 
-  // const removeSubBrand = (sb: string) => {
-  //   setSubBrands((prev) => prev.filter((s) => s !== sb));
-  //   toast.success("Marca removida");
-  // };
+  const handleDeleteBrand = async (brandId: string) => {
+    try {
+      await deleteBrand(brandId);
+      toast.success("Marca removida!");
+      queryClient.invalidateQueries({ queryKey: ["brands"] });
+    } catch (error) {
+      toast.error("Erro ao remover marca");
+    }
+  };
 
-  // const addTag = () => {
-  //   const trimmed = newTag.trim().toLowerCase();
-  //   if (!trimmed) {
-  //     toast.warning("Digite um nome para a tag");
-  //     return;
-  //   }
-  //   if (tags.includes(trimmed)) {
-  //     toast.warning("Esta tag já existe");
-  //     return;
-  //   }
-  //   setTags((prev) => [...prev, trimmed]);
-  //   setNewTag("");
-  //   toast.success("Tag adicionada com sucesso");
-  // };
+  const handleCreateTag = async () => {
+    if (!newTag.trim()) {
+      toast.warning("Digite um nome para a tag");
+      return;
+    }
+    try {
+      await createTag(newTag);
+      toast.success("Tag criada!");
+      setNewTag("");
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
+    } catch (error) {
+      toast.error("Erro ao criar tag");
+    }
+  };
 
-  // const removeTag = (tag: string) => {
-  //   setTags((prev) => prev.filter((t) => t !== tag));
-  //   toast.success("Tag removida");
-  // };
+  const handleDeleteTag = async (tagId: string) => {
+    try {
+      await deleteTag(tagId);
+      toast.success("Tag removida!");
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
+    } catch (error) {
+      toast.error("Erro ao remover tag");
+    }
+  };
 
   return (
     <form
-      className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-2"
       onSubmit={handleSubmit(handleFilter)}
+      className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-2"
     >
       <span className="text-sm font-semibold">Filtros:</span>
 
@@ -248,97 +234,130 @@ export function ProductTableFilters() {
           className="h-8 w-auto"
           {...register("productName")}
         />
-        <Input
-          placeholder="Tags associadas"
-          className="h-8 w-[130px]"
-          {...register("tags")}
-        />
 
+        {/* Filtro de Status */}
         <Controller
           name="status"
           control={control}
-          render={({ field: { name, onChange, value, disabled } }) => (
-            <Select
-              defaultValue="all"
-              name={name}
-              onValueChange={onChange}
-              value={value}
-              disabled={disabled}
-            >
+          render={({ field }) => (
+            <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger className="h-8 w-[180px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos status</SelectItem>
-                <SelectItem value="available">Available</SelectItem>
-                <SelectItem value="unavailable">Unavailable</SelectItem>
-                <SelectItem value="archived">Archived</SelectItem>
+                <SelectItem value="available">Disponível</SelectItem>
+                <SelectItem value="unavailable">Indisponível</SelectItem>
+                <SelectItem value="archived">Arquivado</SelectItem>
               </SelectContent>
             </Select>
           )}
         />
 
+        {/* Filtro de Tags */}
         <div className="flex gap-2">
           <Controller
-            name="category"
+            name="tags"
             control={control}
-            render={({ field: { onChange, value } }) => (
-              <Select value={value} onValueChange={onChange}>
-                <SelectTrigger className="h-8 w-full sm:w-[180px]">
-                  <SelectValue placeholder="Categoria" />
+            render={({ field }) => (
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger className="h-8 w-[180px]">
+                  <SelectValue placeholder="Tags" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todas categorias</SelectItem>
-                  {categoriesOptions?.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
+                  <SelectItem value="all">Todas tags</SelectItem>
+                  {tagsOptions?.map((tag, index) => (
+                    <SelectItem
+                      key={`tag-${tag.value}-${index}`}
+                      value={tag.value}
+                    >
+                      {tag.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             )}
           />
-          {/* <Button
+          <Button
+            type="button"
+            variant="outline"
+            size="xs"
+            onClick={() => setIsTagsModalOpen(true)}
+          >
+            Gerenciar
+          </Button>
+        </div>
+
+        {/* Filtro de Categorias */}
+        <div className="flex gap-2">
+          <Controller
+            name="category"
+            control={control}
+            render={({ field }) => (
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger className="h-8 w-[180px]">
+                  <SelectValue placeholder="Categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas categorias</SelectItem>
+                  {categoriesOptions?.map((category, index) => (
+                    <SelectItem
+                      key={`category-${category.value}-${index}`}
+                      value={category.value}
+                    >
+                      {category.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+          <Button
             type="button"
             variant="outline"
             size="xs"
             onClick={() => setIsCategoryModalOpen(true)}
           >
             Gerenciar
-          </Button> */}
+          </Button>
         </div>
 
+        {/* Filtro de Marcas */}
         <div className="flex gap-2">
           <Controller
-            name="subBrand"
+            name="brandId"
             control={control}
-            render={({ field: { onChange, value } }) => (
-              <Select value={value} onValueChange={onChange}>
-                <SelectTrigger className="h-8 w-full sm:w-[180px]">
+            render={({ field }) => (
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger className="h-8 w-[180px]">
                   <SelectValue placeholder="Marca" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todas as marcas</SelectItem>
-                  {brandsOptions?.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
+                  <SelectItem value="all">Todas marcas</SelectItem>
+                  {brandsOptions?.map((brand, index) => (
+                    <SelectItem
+                      key={`brand-${brand.value}-${index}`}
+                      value={brand.value}
+                    >
+                      {brand.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             )}
           />
-          {/* <Button
+          <Button
             type="button"
             variant="outline"
             size="xs"
-            onClick={() => setIsSubBrandModalOpen(true)}
+            onClick={() => setIsBrandModalOpen(true)}
           >
             Gerenciar
-          </Button> */}
+          </Button>
         </div>
       </div>
 
+      {/* Botões de Ação */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
         <Button
           type="submit"
@@ -361,48 +380,7 @@ export function ProductTableFilters() {
         </Button>
       </div>
 
-      {/* <Dialog open={isTagsModalOpen} onOpenChange={setIsTagsModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Gerenciar Tags</DialogTitle>
-            <DialogDescription>
-              Crie e gerencie tags para classificação
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex gap-2">
-            <Input
-              placeholder="Nova tag"
-              value={newTag}
-              onChange={(e) => setNewTag(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && addTag()}
-            />
-            <Button onClick={addTag}>Adicionar</Button>
-          </div>
-          <div className="mt-4 max-h-60 space-y-2 overflow-y-auto">
-            {tags.map((tag) => (
-              <div
-                key={tag}
-                className="flex items-center justify-between rounded p-2 hover:bg-muted"
-              >
-                <span className="text-sm">{tag}</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => removeTag(tag)}
-                >
-                  <Trash className="h-4 w-4 text-destructive" />
-                </Button>
-              </div>
-            ))}
-            {tags.length === 0 && (
-              <p className="text-center text-sm text-muted-foreground">
-                Nenhuma tag cadastrada
-              </p>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
+      {/* Modais de Gestão */}
       <Dialog open={isCategoryModalOpen} onOpenChange={setIsCategoryModalOpen}>
         <DialogContent>
           <DialogHeader>
@@ -413,35 +391,34 @@ export function ProductTableFilters() {
           </DialogHeader>
           <div className="flex gap-2">
             <Input
-              placeholder="Nova categoria"
               value={newCategory}
               onChange={(e) => setNewCategory(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && addCategory()}
+              onKeyDown={(e) => e.key === "Enter" && handleCreateCategory()}
+              placeholder="Nova categoria"
             />
-            <Button onClick={addCategory}>Adicionar</Button>
+            <Button onClick={() => handleCreateCategory}>Adicionar</Button>
           </div>
           <div className="mt-4 max-h-60 space-y-2 overflow-y-auto">
-            {categories.map((cat) => (
+            {categoriesOptions?.map((category, index) => (
               <div
-                key={cat}
+                key={`category-item-${category.value}-${index}`}
                 className="flex items-center justify-between rounded p-2 hover:bg-muted"
               >
-                <span className="text-sm">{cat}</span>
-                <Button variant="ghost" onClick={() => removeCategory(cat)}>
+                <span>{category.label}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDeleteCategory(category.value)}
+                >
                   <Trash className="h-4 w-4 text-destructive" />
                 </Button>
               </div>
             ))}
-            {categories.length === 0 && (
-              <p className="text-center text-sm text-muted-foreground">
-                Nenhuma categoria cadastrada
-              </p>
-            )}
           </div>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isSubBrandModalOpen} onOpenChange={setIsSubBrandModalOpen}>
+      <Dialog open={isBrandModalOpen} onOpenChange={setIsBrandModalOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Gerenciar Marcas</DialogTitle>
@@ -451,33 +428,70 @@ export function ProductTableFilters() {
           </DialogHeader>
           <div className="flex gap-2">
             <Input
+              value={newBrand}
+              onChange={(e) => setNewBrand(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleCreateBrand()}
               placeholder="Nova marca"
-              value={newSubBrand}
-              onChange={(e) => setNewSubBrand(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && addSubBrand()}
             />
-            <Button onClick={addSubBrand}>Adicionar</Button>
+            <Button onClick={() => handleCreateBrand}>Adicionar</Button>
           </div>
           <div className="mt-4 max-h-60 space-y-2 overflow-y-auto">
-            {subBrands.map((sb) => (
+            {brandsOptions?.map((brand, index) => (
               <div
-                key={sb}
+                key={`brand-item-${brand.value}-${index}`}
                 className="flex items-center justify-between rounded p-2 hover:bg-muted"
               >
-                <span className="text-sm">{sb}</span>
-                <Button variant="ghost" onClick={() => removeSubBrand(sb)}>
+                <span>{brand.label}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDeleteBrand(brand.value)}
+                >
                   <Trash className="h-4 w-4 text-destructive" />
                 </Button>
               </div>
             ))}
-            {subBrands.length === 0 && (
-              <p className="text-center text-sm text-muted-foreground">
-                Nenhuma marca cadastrada
-              </p>
-            )}
           </div>
         </DialogContent>
-      </Dialog> */}
+      </Dialog>
+
+      {/* Modal para Tags */}
+      <Dialog open={isTagsModalOpen} onOpenChange={setIsTagsModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Gerenciar Tags</DialogTitle>
+            <DialogDescription>
+              Crie e gerencie tags para classificação
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-2">
+            <Input
+              value={newTag}
+              onChange={(e) => setNewTag(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleCreateTag()}
+              placeholder="Nova tag"
+            />
+            <Button onClick={() => handleCreateTag}>Adicionar</Button>
+          </div>
+          <div className="mt-4 max-h-60 space-y-2 overflow-y-auto">
+            {tagsOptions?.map((tag, index) => (
+              <div
+                key={`tag-item-${tag.value}-${index}`}
+                className="flex items-center justify-between rounded p-2 hover:bg-muted"
+              >
+                <span>{tag.label}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDeleteTag(tag.value)}
+                >
+                  <Trash className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </form>
   );
 }

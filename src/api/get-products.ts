@@ -6,7 +6,7 @@ export interface GetProductsQuery {
   productId?: string | null;
   status?: string | null;
   category?: string | null;
-  subBrand?: string | null;
+  brandId?: string | null;
   tags?: string[] | null;
 }
 
@@ -16,7 +16,7 @@ export interface GetProductsResponse {
     productName: string;
     priceInCents: number;
     categoryId: string; // Alterado para ID
-    subBrandId: string; // Alterado para ID
+    brandId: string; // Alterado para ID
     tags: string[];
     stock: number;
     sku: string;
@@ -38,7 +38,7 @@ export async function getProducts({
   productName,
   status,
   category,
-  subBrand,
+  brandId,
   tags,
 }: GetProductsQuery) {
   const response = await api.get<GetProductsResponse>("/products", {
@@ -48,7 +48,7 @@ export async function getProducts({
       productId,
       status: status !== "all" ? status : undefined,
       category: category !== "all" ? category : undefined,
-      subBrand: subBrand !== "all" ? subBrand : undefined,
+      brandId: brandId !== "all" ? brandId : undefined,
       tags: tags?.join(","), // Converte array para string separada por vírgulas
     },
   });
