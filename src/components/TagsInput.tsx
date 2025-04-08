@@ -1,112 +1,88 @@
-import { Check, ChevronsUpDown, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 
 interface TagsInputProps {
-  availableTags: string[];
-  selectedTags: string[];
+  initialTags: string[];
   onTagsChange: (tags: string[]) => void;
+  suggestions?: string[];
 }
 
 export function TagsInput({
-  availableTags = [],
-  selectedTags = [],
+  initialTags,
   onTagsChange,
+  suggestions = [],
 }: TagsInputProps) {
-  const [open, setOpen] = useState(false);
+  const [tags, setTags] = useState<string[]>(initialTags);
+  const [inputValue, setInputValue] = useState("");
 
-  // Garantia de tipos e valores válidos
-  const safeAvailableTags = Array.isArray(availableTags)
-    ? availableTags.filter((tag) => typeof tag === "string")
-    : [];
+  const addTag = (tag: string) => {
+    if (tag && !tags.includes(tag)) {
+      const newTags = [...tags, tag];
+      setTags(newTags);
+      onTagsChange(newTags);
+    }
+  };
 
-  const safeSelectedTags = Array.isArray(selectedTags)
-    ? selectedTags.filter((tag) => typeof tag === "string")
-    : [];
-
-  const toggleTag = (tag: string) => {
-    const newTags = safeSelectedTags.includes(tag)
-      ? safeSelectedTags.filter((t) => t !== tag)
-      : [...safeSelectedTags, tag];
+  const removeTag = (index: number) => {
+    const newTags = tags.filter((_, i) => i !== index);
+    setTags(newTags);
     onTagsChange(newTags);
   };
 
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-2">
-        {safeSelectedTags.map((tag) => (
-          <Badge
-            key={tag}
-            variant="secondary"
-            className="flex items-center gap-1"
+        {tags.map((tag, index) => (
+          <div
+            key={index}
+            className="flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-sm text-blue-800"
           >
-            {tag}
+            <span>{tag}</span>
             <button
               type="button"
-              onClick={() => toggleTag(tag)}
-              className="ml-1 rounded-full hover:bg-accent"
-              aria-label={`Remover tag ${tag}`}
+              onClick={() => removeTag(index)}
+              className="ml-1 text-blue-600 hover:text-blue-800"
             >
-              <X className="h-3 w-3" />
+              ×
             </button>
-          </Badge>
+          </div>
         ))}
       </div>
 
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            className="w-full justify-between"
-            aria-expanded={open}
-          >
-            Selecionar tags...
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
+      <div className="relative">
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              addTag(inputValue.trim());
+              setInputValue("");
+            }
+          }}
+          className="w-full rounded border p-2"
+          placeholder="Adicione tags..."
+        />
 
-        <PopoverContent className="p-0" align="start">
-          <Command>
-            <CommandInput placeholder="Pesquisar tags..." />
-            <CommandEmpty>Nenhuma tag encontrada</CommandEmpty>
-            <CommandGroup className="max-h-48 overflow-y-auto">
-              {safeAvailableTags.map((tag) => (
-                <CommandItem
-                  key={tag}
-                  value={tag}
-                  onSelect={() => toggleTag(tag)}
-                  className="cursor-pointer"
+        {suggestions.length > 0 && (
+          <div className="absolute z-10 mt-1 w-full rounded border bg-white shadow-lg">
+            {suggestions
+              .filter((suggestion) => !tags.includes(suggestion))
+              .map((suggestion) => (
+                <div
+                  key={suggestion}
+                  onClick={() => {
+                    addTag(suggestion);
+                    setInputValue("");
+                  }}
+                  className="cursor-pointer p-2 hover:bg-gray-100"
                 >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      safeSelectedTags.includes(tag)
-                        ? "opacity-100"
-                        : "opacity-0",
-                    )}
-                  />
-                  {tag}
-                </CommandItem>
+                  {suggestion}
+                </div>
               ))}
-            </CommandGroup>
-          </Command>
-        </PopoverContent>
-      </Popover>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

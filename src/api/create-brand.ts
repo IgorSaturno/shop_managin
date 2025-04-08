@@ -14,5 +14,6 @@ export async function createBrand(name: string) {
 
 export async function listBrands() {
   const response = await api.get<Brand[]>("/brands");
+  console.log("Marcas recebidas:", response.data);
   return response.data;
 }

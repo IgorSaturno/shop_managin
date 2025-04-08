@@ -24,6 +24,7 @@ export interface GetProductsResponse {
     status: "available" | "unavailable" | "archived";
     createdAt: string;
     description: string;
+    images: string[];
   }[];
   meta: {
     pageIndex: number;

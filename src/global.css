@@ -82,3 +82,13 @@
 .react-dropzone-active * {
   pointer-events: auto !important;
 }
+
+@layer components {
+  .multi-select-chip {
+    @apply flex items-center gap-1 rounded-md bg-accent px-2 py-1 text-sm text-accent-foreground;
+  }
+
+  .multi-select-checkbox {
+    @apply h-4 w-4 accent-primary focus:ring-primary;
+  }
+}

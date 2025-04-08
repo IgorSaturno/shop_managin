@@ -30,7 +30,7 @@ export interface GetOrderDetailsResponse {
     priceInCents: number;
     quantity: number;
     product: {
-      name: string;
+      product_name: string;
     };
   }[];
 

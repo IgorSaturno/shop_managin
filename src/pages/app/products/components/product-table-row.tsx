@@ -8,10 +8,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { TableCell, TableRow } from "@/components/ui/table";
-import { Search, Trash } from "lucide-react";
+import { Pencil, Search, Trash } from "lucide-react";
 import { ProductDetails } from "./product-details";
+import ProductEditDetails from "./product-edit-details";
 import { useState } from "react";
-// import ProductEditDetails from "./product-edit-details";
 
 import { showToast } from "@/components/toast";
 import { api } from "@/lib/axios";
@@ -31,6 +31,7 @@ interface ProductTableRowProps {
     categoryId: string; // ID da categoria (vindo do backend)
     brandId: string; // ID da marca (vindo do backend)
     tags?: string[];
+    images: string[];
   };
   refresh: () => void;
 }
@@ -152,7 +153,7 @@ export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
       </TableCell>
 
       {/* Botão de Edição */}
-      {/* <TableCell className="sm:w-[132px]">
+      <TableCell className="sm:w-[132px]">
         <div className="flex gap-2">
           <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
             <DialogTrigger asChild>
@@ -168,7 +169,7 @@ export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
             />
           </Dialog>
         </div>
-      </TableCell> */}
+      </TableCell>
 
       {/* Botão de Exclusão */}
       <TableCell className="sm:w-[132px]">

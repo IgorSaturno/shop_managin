@@ -84,7 +84,7 @@ export function ProductTableFilters() {
     queryFn: async () => {
       const data = await listTags();
       return data
-        .filter((tag) => tag.id && tag.tag_name)
+        .filter((tag) => tag.id.trim() !== "" && tag.tag_name.trim() !== "")
         .map((tag) => ({
           value: tag.id,
           label: tag.tag_name,
@@ -262,7 +262,7 @@ export function ProductTableFilters() {
             render={({ field }) => (
               <Select value={field.value} onValueChange={field.onChange}>
                 <SelectTrigger className="h-8 w-[180px]">
-                  <SelectValue placeholder="Tags" />
+                  <SelectValue placeholder="Todas tags" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas tags</SelectItem>
@@ -396,7 +396,7 @@ export function ProductTableFilters() {
               onKeyDown={(e) => e.key === "Enter" && handleCreateCategory()}
               placeholder="Nova categoria"
             />
-            <Button onClick={() => handleCreateCategory}>Adicionar</Button>
+            <Button onClick={handleCreateCategory}>Adicionar</Button>
           </div>
           <div className="mt-4 max-h-60 space-y-2 overflow-y-auto">
             {categoriesOptions?.map((category, index) => (
@@ -433,7 +433,7 @@ export function ProductTableFilters() {
               onKeyDown={(e) => e.key === "Enter" && handleCreateBrand()}
               placeholder="Nova marca"
             />
-            <Button onClick={() => handleCreateBrand}>Adicionar</Button>
+            <Button onClick={handleCreateBrand}>Adicionar</Button>
           </div>
           <div className="mt-4 max-h-60 space-y-2 overflow-y-auto">
             {brandsOptions?.map((brand, index) => (
@@ -471,7 +471,7 @@ export function ProductTableFilters() {
               onKeyDown={(e) => e.key === "Enter" && handleCreateTag()}
               placeholder="Nova tag"
             />
-            <Button onClick={() => handleCreateTag}>Adicionar</Button>
+            <Button onClick={handleCreateTag}>Adicionar</Button>
           </div>
           <div className="mt-4 max-h-60 space-y-2 overflow-y-auto">
             {tagsOptions?.map((tag, index) => (
