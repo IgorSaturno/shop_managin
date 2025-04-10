@@ -5,7 +5,7 @@ export interface GetProductsQuery {
   pageIndex?: number;
   productId?: string | null;
   status?: string | null;
-  category?: string | null;
+  categoryId?: string | null;
   brandId?: string | null;
   tags?: string[] | null;
 }
@@ -38,7 +38,7 @@ export async function getProducts({
   productId,
   productName,
   status,
-  category,
+  categoryId,
   brandId,
   tags,
 }: GetProductsQuery) {
@@ -48,7 +48,7 @@ export async function getProducts({
       pageIndex,
       productId,
       status: status !== "all" ? status : undefined,
-      category: category !== "all" ? category : undefined,
+      categoryId: categoryId !== "all" ? categoryId : undefined,
       brandId: brandId !== "all" ? brandId : undefined,
       tags: tags?.join(","), // Converte array para string separada por vírgulas
     },

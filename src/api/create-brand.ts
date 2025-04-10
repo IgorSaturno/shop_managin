@@ -1,6 +1,6 @@
 import { api } from "@/lib/axios";
 
-export interface Brand {
+export interface CreateBrandResponse {
   brand_id: string;
   brand_name: string;
   slug: string;
@@ -8,12 +8,12 @@ export interface Brand {
 }
 
 export async function createBrand(name: string) {
-  const response = await api.post<Brand>("/brands", { name });
+  const response = await api.post<CreateBrandResponse>("/brands", { name });
   return response.data;
 }
 
-export async function listBrands() {
-  const response = await api.get<Brand[]>("/brands");
-  console.log("Marcas recebidas:", response.data);
-  return response.data;
-}
+// export async function listBrands() {
+//   const response = await api.get<Brand[]>("/brands");
+//   console.log("Marcas recebidas:", response.data);
+//   return response.data;
+// }

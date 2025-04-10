@@ -1,91 +1,103 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import { Badge } from "@/components/ui/badge";
+import { Check, X } from "lucide-react";
 
 interface MultiSelectProps {
-  options: Array<{ value: string; label: string }>;
+  options: { value: string; label: string }[];
   selectedValues: string[];
-  onValueChange: (values: string[]) => void;
+  onChange: (values: string[]) => void;
   placeholder?: string;
 }
 
 export function MultiSelect({
   options,
   selectedValues,
-  onValueChange,
+  onChange,
   placeholder = "Selecione...",
 }: MultiSelectProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
-  const handleSelect = (value: string) => {
-    const newValues = selectedValues.includes(value)
-      ? selectedValues.filter((v) => v !== value)
-      : [...selectedValues, value];
-    onValueChange(newValues);
-    setIsOpen(true);
+  // Cria uma lista deduplicada dos valores selecionados
+  const uniqueSelectedValues = useMemo(() => {
+    return Array.from(new Set(selectedValues));
+  }, [selectedValues]);
+
+  const toggleValue = (value: string) => {
+    const newValues = uniqueSelectedValues.includes(value)
+      ? uniqueSelectedValues.filter((v) => v !== value)
+      : [...uniqueSelectedValues, value];
+    onChange(newValues);
   };
 
   return (
-    <Select
-      value=""
-      onValueChange={handleSelect}
-      open={isOpen}
-      onOpenChange={setIsOpen}
-    >
-      <SelectTrigger className="flex h-auto min-h-8 w-[180px] flex-wrap gap-1">
-        {selectedValues.length > 0 ? (
-          selectedValues.map((value) => {
-            const label = options.find((opt) => opt.value === value)?.label;
-            return (
-              <div
-                key={value}
-                className="flex items-center gap-1 rounded-md bg-accent px-2 py-1 text-sm text-accent-foreground"
-              >
-                <span>{label}</span>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleSelect(value);
-                  }}
-                  className="ml-1 hover:text-foreground"
-                >
-                  ×
-                </button>
-              </div>
-            );
-          })
-        ) : (
-          <SelectValue placeholder={placeholder} />
-        )}
-      </SelectTrigger>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          className="w-full justify-between"
+        >
+          <div className="flex flex-wrap gap-1">
+            {uniqueSelectedValues.length > 0 ? (
+              uniqueSelectedValues.map((value) => {
+                const label = options.find((opt) => opt.value === value)?.label;
+                return (
+                  <Badge key={value} variant="secondary" className="mb-1 mr-1">
+                    {label}
+                    <X
+                      className="ml-1 h-3 w-3 cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleValue(value);
+                      }}
+                    />
+                  </Badge>
+                );
+              })
+            ) : (
+              <span>{placeholder}</span>
+            )}
+          </div>
+        </Button>
+      </PopoverTrigger>
 
-      <SelectContent>
-        {options.map((option) => (
-          <SelectItem
-            key={option.value}
-            value={option.value}
-            className="cursor-pointer"
-            onSelect={(e) => e.preventDefault()}
-          >
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={selectedValues.includes(option.value)}
-                readOnly
-                className="h-4 w-4 accent-primary"
-              />
-              <span className="truncate">{option.label}</span>
-            </div>
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+      <PopoverContent className="w-full p-0">
+        <Command>
+          <CommandInput placeholder="Buscar tags..." />
+          <CommandEmpty>Nenhum item encontrado.</CommandEmpty>
+          <CommandGroup className="max-h-60 overflow-auto">
+            {options.map((option, index) => (
+              <CommandItem
+                key={`${option.value}-${index}`}
+                value={option.value}
+                onSelect={() => toggleValue(option.value)}
+              >
+                <Check
+                  className={`mr-2 h-4 w-4 ${
+                    uniqueSelectedValues.includes(option.value)
+                      ? "opacity-100"
+                      : "opacity-0"
+                  }`}
+                />
+                {option.label}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }

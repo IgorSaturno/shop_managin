@@ -22,9 +22,12 @@ import { useSearchParams } from "react-router-dom";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createCategory, listCategories } from "@/api/create-category";
-import { createBrand, listBrands } from "@/api/create-brand";
-import { createTag, listTags } from "@/api/create-tag";
+import { createCategory } from "@/api/create-category";
+import { getCategories } from "@/api/get-categories";
+import { createBrand } from "@/api/create-brand";
+import { getBrands } from "@/api/get-brands";
+import { createTag } from "@/api/create-tag";
+import { getTags } from "@/api/get-tags";
 import { deleteCategory } from "@/api/delete-category";
 import { deleteBrand } from "@/api/delete-brand";
 import { deleteTag } from "@/api/delete.tag";
@@ -34,7 +37,7 @@ const productFiltersSchema = z.object({
   productName: z.string().optional(),
   tags: z.string().optional(),
   status: z.string().optional(),
-  category: z.string().optional(),
+  categoryId: z.string().optional(),
   brandId: z.string().optional(),
 });
 
@@ -56,7 +59,7 @@ export function ProductTableFilters() {
   const { data: categoriesOptions } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
-      const data = await listCategories();
+      const data = await getCategories();
       return data
         .filter((category) => category.category_id && category.category_name)
         .map((category) => ({
@@ -69,7 +72,7 @@ export function ProductTableFilters() {
   const { data: brandsOptions } = useQuery({
     queryKey: ["brands"],
     queryFn: async () => {
-      const data = await listBrands();
+      const data = await getBrands();
       return data
         .filter((brand) => brand.brand_id && brand.brand_name)
         .map((brand) => ({
@@ -82,7 +85,7 @@ export function ProductTableFilters() {
   const { data: tagsOptions } = useQuery({
     queryKey: ["tags"],
     queryFn: async () => {
-      const data = await listTags();
+      const data = await getTags();
       return data
         .filter((tag) => tag.id.trim() !== "" && tag.tag_name.trim() !== "")
         .map((tag) => ({
@@ -100,7 +103,7 @@ export function ProductTableFilters() {
         productName: searchParams.get("productName") || "",
         tags: searchParams.get("tags") || "all",
         status: searchParams.get("status") || "all",
-        category: searchParams.get("category") || "all",
+        categoryId: searchParams.get("categoryId") || "all",
         brandId: searchParams.get("brandId") || "all",
       },
     });
@@ -109,13 +112,25 @@ export function ProductTableFilters() {
     console.log("Valores do filtro:", data);
     setSearchParams((state) => {
       Object.entries(data).forEach(([key, value]) => {
-        if (key === "brandId") {
-          // Trata o campo de marca separadamente
-          value && value !== "all"
-            ? state.set("brandId", value) // Usa "brandId" na URL
-            : state.delete("brandId");
-        } else {
-          value && value !== "all" ? state.set(key, value) : state.delete(key);
+        // Tratamento especial para campos que precisam de mapeamento de nomes
+        switch (key) {
+          case "brandId":
+            value && value !== "all"
+              ? state.set("brandId", value)
+              : state.delete("brandId");
+            break;
+
+          case "categoryId": // Campo do formulário
+            value && value !== "all"
+              ? state.set("categoryId", value) // Mapeia para categoryId na URL
+              : state.delete("categoryId");
+            break;
+
+          default:
+            // Campos normais (productId, productName, tags, status)
+            value && value !== "all"
+              ? state.set(key, value)
+              : state.delete(key);
         }
       });
 
@@ -131,7 +146,7 @@ export function ProductTableFilters() {
         "productName",
         "tags",
         "status",
-        "category",
+        "categoryId",
         "brandId",
       ].forEach((key) => state.delete(key));
       state.set("page", "1");
@@ -291,7 +306,7 @@ export function ProductTableFilters() {
         {/* Filtro de Categorias */}
         <div className="flex gap-2">
           <Controller
-            name="category"
+            name="categoryId"
             control={control}
             render={({ field }) => (
               <Select value={field.value} onValueChange={field.onChange}>

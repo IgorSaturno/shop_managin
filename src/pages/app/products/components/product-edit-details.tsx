@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   DialogContent,
   DialogDescription,
@@ -19,15 +19,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import { TagsInput } from "@/components/TagsInput";
+
 import { updateProduct } from "@/api/update-product";
+import { MultiSelect } from "@/components/Multi-select";
+import { useQuery } from "@tanstack/react-query";
+import { getCategories } from "@/api/get-categories";
+import { getBrands } from "@/api/get-brands";
+import { getTags } from "@/api/get-tags";
+import { Controller, useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 interface ProductEditDetailsProps {
   product: {
     productId: string;
     productName: string;
     description: string;
-    priceInCents: number;
+    price: number;
     status: "available" | "unavailable" | "archived";
     stock: number;
     categoryId: string;
@@ -39,117 +47,96 @@ interface ProductEditDetailsProps {
   refresh: () => void;
 }
 
+const productEditSchema = z.object({
+  productId: z.string(),
+  productName: z.string().min(1, "Nome é obrigatório"),
+  description: z.string().optional(),
+  price: z.number().min(0.01, "Preço inválido"),
+  stock: z.number().min(0, "Estoque inválido"),
+  status: z.enum(["available", "unavailable", "archived"]),
+  categoryId: z.string().min(1, "Selecione uma categoria"),
+  brandId: z.string().min(1, "Selecione uma marca"),
+  tags: z.array(z.string()),
+  images: z.array(z.string()),
+});
+
+type ProductEditSchema = z.infer<typeof productEditSchema>;
+
 export default function ProductEditDetails({
   product,
   onClose,
   refresh,
 }: ProductEditDetailsProps) {
-  // 1. Memoize valores iniciais para evitar recriação desnecessária
-  const initialImages = useMemo(() => product.images, [product.images]);
-  const initialTags = useMemo(() => product.tags || [], [product.tags]);
-
-  // 2. Estados com inicialização segura
-  const [editedProduct, setEditedProduct] = useState({
-    productId: product.productId,
-    productName: product.productName,
-    description: product.description,
-    price: product.priceInCents / 100, // Conversão para decimal
-    stock: product.stock,
-    status: product.status,
-    categoryId: product.categoryId,
-    brandId: product.brandId,
+  const {
+    control,
+    handleSubmit,
+    formState: { isSubmitting },
+  } = useForm<ProductEditSchema>({
+    resolver: zodResolver(productEditSchema),
+    defaultValues: {
+      productId: product.productId,
+      productName: product.productName,
+      description: product.description,
+      price: product.price,
+      stock: product.stock,
+      status: product.status,
+      categoryId: product.categoryId,
+      brandId: product.brandId,
+      tags: product.tags || [],
+      images: product.images,
+    },
   });
 
-  const [categories, setCategories] = useState<
-    { value: string; label: string }[]
-  >([]);
-  const [brands, setBrands] = useState<{ value: string; label: string }[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [editedTags, setEditedTags] = useState<string[]>(initialTags);
-  const [editedImages, setEditedImages] = useState<string[]>(initialImages);
+  const { data: categoriesOptionsUpdate } = useQuery({
+    queryKey: ["categoriesupdate"],
+    queryFn: async () => {
+      const data = await getCategories();
+      return data.map((category, index) => ({
+        value: category.category_id,
+        label: category.category_name,
+        key: `category-${category.category_id}-${index}`,
+      }));
+    },
+  });
 
-  // 3. Carregamento otimizado de dados
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [categoriesRes, brandsRes] = await Promise.all([
-          fetch("/api/categories"),
-          fetch("/api/brands"),
-        ]);
+  const { data: brandsOptionsUpdate } = useQuery({
+    queryKey: ["brandsupdate"],
+    queryFn: async () => {
+      const data = await getBrands();
+      return data.map((brand, index) => ({
+        value: brand.brand_id,
+        label: brand.brand_name,
+        key: `brand-${brand.brand_id}-${index}`,
+      }));
+    },
+  });
 
-        const [categoriesData, brandsData] = await Promise.all([
-          categoriesRes.json(),
-          brandsRes.json(),
-        ]);
-
-        // Ordenar dados para consistência
-        setCategories(
-          categoriesData.sort((a, b) => a.label.localeCompare(b.label)),
-        );
-        setBrands(brandsData.sort((a, b) => a.label.localeCompare(b.label)));
-      } catch (error) {
-        console.error("Erro ao carregar dados:", error);
-        toast.error("Falha ao carregar dados de configuração");
-      }
-    };
-
-    loadData();
-  }, []); // Executa apenas uma vez
-
-  // 4. Callback memoizado para atualização de imagens
-  const handleImageUpdate = useCallback((newImages: string[]) => {
-    setEditedImages((prev) => {
-      // Comparação profunda para evitar atualizações desnecessárias
-      return JSON.stringify(prev) === JSON.stringify(newImages)
-        ? prev
-        : newImages;
-    });
-  }, []);
+  const { data: tagsOptionsUpdate } = useQuery({
+    queryKey: ["tagsupdate"],
+    queryFn: async () => {
+      const data = await getTags();
+      return data.map((tag, index) => ({
+        value: tag.id,
+        label: tag.tag_name,
+        key: `tag-${tag.id}-${index}`,
+      }));
+    },
+  });
 
   // 5. Validação de campos
-  const validateFields = (): boolean => {
-    const errors = [];
-    if (!editedProduct.productName.trim()) errors.push("Nome é obrigatório");
-    if (editedProduct.price < 0) errors.push("Preço inválido");
-    if (editedProduct.stock < 0) errors.push("Estoque inválido");
-
-    if (errors.length > 0) {
-      toast.error(errors.join("\n"));
-      return false;
-    }
-    return true;
-  };
 
   // 6. Lógica de salvamento
-  const handleSave = async () => {
-    if (!validateFields()) return;
-
+  const handleSave = async (data: ProductEditSchema) => {
     try {
-      setIsLoading(true);
-
       await updateProduct({
-        id: editedProduct.productId,
-        name: editedProduct.productName,
-        description: editedProduct.description,
-        price: editedProduct.price,
-        stock: editedProduct.stock,
-        status: editedProduct.status,
-        categoryId: editedProduct.categoryId,
-        brandId: editedProduct.brandId,
-        tags: editedTags,
-        images: editedImages,
+        ...data,
+        pricepriceInCents: Math.round(data.price * 100), // Converter para centavos
       });
-
       refresh();
       toast.success("Produto atualizado!");
       onClose();
     } catch (error) {
-      console.error("Erro detalhado:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Erro ao atualizar";
-      toast.error(errorMessage);
-    } finally {
-      setIsLoading(false);
+      toast.error(error instanceof Error ? error.message : "Erro ao atualizar");
     }
   };
 
@@ -162,172 +149,219 @@ export default function ProductEditDetails({
         </DialogDescription>
       </DialogHeader>
 
-      <div className="space-y-4">
-        {/* Campo Nome */}
-        <div className="space-y-1">
-          <Label htmlFor="productName">Nome do Produto</Label>
-          <Input
-            id="productName"
-            value={editedProduct.productName}
-            onChange={(e) =>
-              setEditedProduct({
-                ...editedProduct,
-                productName: e.target.value,
-              })
-            }
-          />
-        </div>
-
-        {/* Preço e Estoque */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <Label htmlFor="productPrice">Preço (R$)</Label>
-            <Input
-              id="productPrice"
-              type="number"
-              min="0"
-              step="0.01"
-              value={editedProduct.price}
-              onChange={(e) =>
-                setEditedProduct({
-                  ...editedProduct,
-                  price: Number(e.target.value),
-                })
-              }
-            />
-          </div>
-
-          <div className="space-y-1">
-            <Label htmlFor="productStock">Estoque</Label>
-            <Input
-              id="productStock"
-              type="number"
-              min="0"
-              value={editedProduct.stock}
-              onChange={(e) =>
-                setEditedProduct({
-                  ...editedProduct,
-                  stock: Number(e.target.value),
-                })
-              }
-            />
-          </div>
-        </div>
-
-        {/* Status */}
-        <div className="space-y-1">
-          <Label htmlFor="productStatus">Status</Label>
-          <Select
-            value={editedProduct.status}
-            onValueChange={(value: "available" | "unavailable" | "archived") =>
-              setEditedProduct({ ...editedProduct, status: value })
-            }
-          >
-            <SelectTrigger id="productStatus">
-              <SelectValue placeholder="Selecione o status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="available">Disponível</SelectItem>
-              <SelectItem value="unavailable">Indisponível</SelectItem>
-              <SelectItem value="archived">Arquivado</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Categoria e Marca */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <Label htmlFor="productCategory">Categoria</Label>
-            <Select
-              value={editedProduct.categoryId}
-              onValueChange={(value) =>
-                setEditedProduct({ ...editedProduct, categoryId: value })
-              }
-            >
-              <SelectTrigger id="productCategory">
-                <SelectValue placeholder="Selecione a categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem key={category.value} value={category.value}>
-                    {category.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1">
-            <Label htmlFor="productBrand">Marca</Label>
-            <Select
-              value={editedProduct.brandId}
-              onValueChange={(value) =>
-                setEditedProduct({ ...editedProduct, brandId: value })
-              }
-            >
-              <SelectTrigger id="productBrand">
-                <SelectValue placeholder="Selecione a marca" />
-              </SelectTrigger>
-              <SelectContent>
-                {brands.map((brand) => (
-                  <SelectItem key={brand.value} value={brand.value}>
-                    {brand.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Descrição */}
-        <div className="space-y-1">
-          <Label htmlFor="productDescription">Descrição</Label>
-          <Textarea
-            id="productDescription"
-            value={editedProduct.description}
-            onChange={(e) =>
-              setEditedProduct({
-                ...editedProduct,
-                description: e.target.value,
-              })
-            }
-            className="min-h-[100px]"
-          />
-        </div>
-
-        {/* Tags */}
-        <div className="space-y-1">
-          <Label>Tags</Label>
-          <TagsInput initialTags={editedTags} onTagsChange={setEditedTags} />
-        </div>
-
-        {/* Upload de Imagens */}
-        <div className="space-y-1">
-          <Label>Imagens do Produto (Máx. 4)</Label>
-          <ImageUpload
-            initialImages={editedImages}
-            onImagesChange={handleImageUpdate}
-            maxImages={4}
-          />
-        </div>
-
-        {/* Botões de Ação */}
-        <div className="mt-6 flex justify-end gap-2">
-          <Button variant="outline" onClick={onClose} disabled={isLoading}>
-            Cancelar
-          </Button>
-          <Button onClick={handleSave} disabled={isLoading}>
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Salvando...
-              </>
-            ) : (
-              "Salvar Alterações"
+      {/* ALTERAR: Converter para formulário controlado */}
+      <form onSubmit={handleSubmit(handleSave)}>
+        <div className="space-y-4">
+          {/* Campo Nome */}
+          <Controller
+            name="productName"
+            control={control}
+            render={({ field }) => (
+              <div className="space-y-1">
+                <Label htmlFor="productName">Nome do Produto</Label>
+                <Input id="productName" {...field} />
+              </div>
             )}
-          </Button>
+          />
+
+          {/* Preço e Estoque */}
+          <div className="grid grid-cols-2 gap-4">
+            <Controller
+              name="price"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-1">
+                  <Label htmlFor="price">Preço (R$)</Label>
+                  <Input
+                    id="price"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    {...field}
+                    onChange={(e) => field.onChange(Number(e.target.value))}
+                  />
+                </div>
+              )}
+            />
+
+            <Controller
+              name="stock"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-1">
+                  <Label htmlFor="stock">Estoque</Label>
+                  <Input
+                    id="stock"
+                    type="number"
+                    min="0"
+                    {...field}
+                    onChange={(e) => field.onChange(Number(e.target.value))}
+                  />
+                </div>
+              )}
+            />
+          </div>
+
+          {/* Status */}
+          <Controller
+            name="status"
+            control={control}
+            render={({ field }) => (
+              <div className="space-y-1">
+                <Label htmlFor="status">Status</Label>
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="available">Disponível</SelectItem>
+                    <SelectItem value="unavailable">Indisponível</SelectItem>
+                    <SelectItem value="archived">Arquivado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          />
+
+          {/* Categoria e Marca */}
+          <div className="grid grid-cols-2 gap-4">
+            <Controller
+              name="categoryId"
+              control={control}
+              render={({ field, fieldState }) => (
+                <div className="space-y-1">
+                  <Label>Categoria</Label>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a categoria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categoriesOptionsUpdate?.map((category) => (
+                        <SelectItem key={category.value} value={category.value}>
+                          {category.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {fieldState.error && (
+                    <p className="text-sm text-red-500">
+                      {fieldState.error.message}
+                    </p>
+                  )}
+                </div>
+              )}
+            />
+            <Controller
+              name="brandId"
+              control={control}
+              render={({ field, fieldState }) => (
+                <div className="space-y-1">
+                  <Label>Marca</Label>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a marca" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {brandsOptionsUpdate?.map((brand) => (
+                        <SelectItem key={brand.value} value={brand.value}>
+                          {brand.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {fieldState.error && (
+                    <p className="text-sm text-red-500">
+                      {fieldState.error.message}
+                    </p>
+                  )}
+                </div>
+              )}
+            />
+          </div>
+
+          {/* Tags */}
+          <Controller
+            name="tags"
+            control={control}
+            render={({ field, fieldState }) => (
+              <div className="space-y-2">
+                <Label>Tags</Label>
+                <MultiSelect
+                  options={tagsOptionsUpdate || []}
+                  selectedValues={field.value}
+                  onChange={field.onChange}
+                  placeholder="Selecione as tags..."
+                />
+                {fieldState.error && (
+                  <p className="text-sm text-red-500">
+                    {fieldState.error.message}
+                  </p>
+                )}
+              </div>
+            )}
+          />
+
+          {/* Descrição */}
+          <Controller
+            name="description"
+            control={control}
+            render={({ field, fieldState }) => (
+              <div className="space-y-1">
+                <Label htmlFor="productDescription">Descrição</Label>
+                <Textarea
+                  id="productDescription"
+                  {...field}
+                  className="min-h-[100px]"
+                />
+                {fieldState.error && (
+                  <p className="text-sm text-red-500">
+                    {fieldState.error.message}
+                  </p>
+                )}
+              </div>
+            )}
+          />
+
+          {/* Upload de Imagens */}
+          <Controller
+            name="images"
+            control={control}
+            render={({ field, fieldState }) => (
+              <div className="space-y-1">
+                <Label>Imagens do Produto (Máx. 4)</Label>
+                <ImageUpload
+                  initialImages={field.value}
+                  onImagesChange={field.onChange}
+                  maxImages={4}
+                />
+                {fieldState.error && (
+                  <p className="text-sm text-red-500">
+                    {fieldState.error.message}
+                  </p>
+                )}
+              </div>
+            )}
+          />
+
+          {/* Botões de Ação */}
+          <div className="mt-6 flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isSubmitting}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              {isSubmitting ? "Salvando..." : "Salvar Alterações"}
+            </Button>
+          </div>
         </div>
-      </div>
+      </form>
     </DialogContent>
   );
 }

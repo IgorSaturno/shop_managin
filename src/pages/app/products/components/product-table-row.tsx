@@ -113,7 +113,7 @@ export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
 
       <TableCell className="hidden sm:table-cell">
         <div className="flex flex-wrap gap-1">
-          {product?.tags?.map((tag, index) => (
+          {(product.tags ?? []).map((tag, index) => (
             <span
               key={`${product.productId}-${tag}-${index}`}
               className="rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800"

@@ -31,7 +31,7 @@ export default function Products() {
   const productName = searchParams.get("productName");
   const productId = searchParams.get("productId");
   const status = searchParams.get("status");
-  const category = searchParams.get("category");
+  const categoryId = searchParams.get("categoryId");
   const brandId = searchParams.get("brandId");
   const tags = searchParams.get("tags")?.split(",") || null;
 
@@ -43,13 +43,15 @@ export default function Products() {
   const { data: result } = useQuery<GetProductsResponse>({
     queryKey: [
       "products",
-      pageIndex,
-      productName,
-      productId,
-      status,
-      category,
-      brandId,
-      tags,
+      {
+        pageIndex,
+        productName,
+        productId,
+        status,
+        categoryId,
+        brandId,
+        tags,
+      },
     ],
     queryFn: () =>
       getProducts({
@@ -57,8 +59,8 @@ export default function Products() {
         productName,
         productId,
         status: status === "all" ? null : status,
-        category,
-        brandId,
+        categoryId: categoryId === "all" ? null : categoryId,
+        brandId: brandId === "all" ? null : brandId,
         tags,
       }),
   });
@@ -71,10 +73,15 @@ export default function Products() {
   }
 
   const queryClient = useQueryClient();
-  const refresh = () => {
-    queryClient.invalidateQueries({
-      queryKey: ["products"],
-    });
+  const refresh = async () => {
+    try {
+      await queryClient.invalidateQueries({
+        queryKey: ["products"],
+        refetchType: "active",
+      });
+    } catch (error) {
+      console.error("Error refreshing products:", error);
+    }
   };
 
   return (
