@@ -2,7 +2,7 @@ import { api } from "@/lib/axios";
 
 export interface GetManagedStoreResponse {
   id: string;
-  name: string;
+  store_name: string;
   createdAt: Date | null;
   updatedAt: Date | null;
   description: string | null;

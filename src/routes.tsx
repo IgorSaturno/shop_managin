@@ -16,6 +16,7 @@ import Products from "./pages/app/products";
 // import { User } from "./pages/app/user";
 // import { Settings } from "./pages/app/settings";
 import { Customers } from "./pages/app/customers";
+import { ProductAttributesManager } from "./pages/app/product-attributes-manager";
 
 export const router = createBrowserRouter([
   {
@@ -28,6 +29,7 @@ export const router = createBrowserRouter([
       { path: "/orders", element: <Orders /> },
       { path: "/products", element: <Products /> },
       { path: "/customers", element: <Customers /> },
+      { path: "/attributes", element: <ProductAttributesManager /> },
       // { path: "/user", element: <User /> },
       // { path: "/support", element: <Support /> },
       // { path: "/settings", element: <Settings /> },

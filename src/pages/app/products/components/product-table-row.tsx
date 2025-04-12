@@ -8,9 +8,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { TableCell, TableRow } from "@/components/ui/table";
-import { Pencil, Search, Trash } from "lucide-react";
+import { Search, Trash } from "lucide-react";
 import { ProductDetails } from "./product-details";
-import ProductEditDetails from "./product-edit-details";
+// import ProductEditDetails from "./product-edit-details";
 import { useState } from "react";
 
 import { showToast } from "@/components/toast";
@@ -38,7 +38,7 @@ interface ProductTableRowProps {
 
 export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false);
+  // const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   const { data: categories } = useQuery({
@@ -66,10 +66,10 @@ export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
   const brandName =
     brands?.find((brand) => brand.value === product.brandId)?.label || "N/A";
 
-  const handleEditSuccess = () => {
-    setIsEditOpen(false);
-    refresh();
-  };
+  // const handleEditSuccess = () => {
+  //   setIsEditOpen(false);
+  //   refresh();
+  // };
 
   const handleDelete = async () => {
     try {
@@ -113,7 +113,7 @@ export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
 
       <TableCell className="hidden sm:table-cell">
         <div className="flex flex-wrap gap-1">
-          {(product.tags ?? []).map((tag, index) => (
+          {Array.from(new Set(product.tags ?? [])).map((tag, index) => (
             <span
               key={`${product.productId}-${tag}-${index}`}
               className="rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800"
@@ -153,7 +153,7 @@ export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
       </TableCell>
 
       {/* Botão de Edição */}
-      <TableCell className="sm:w-[132px]">
+      {/* <TableCell className="sm:w-[132px]">
         <div className="flex gap-2">
           <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
             <DialogTrigger asChild>
@@ -169,7 +169,7 @@ export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
             />
           </Dialog>
         </div>
-      </TableCell>
+      </TableCell> */}
 
       {/* Botão de Exclusão */}
       <TableCell className="sm:w-[132px]">

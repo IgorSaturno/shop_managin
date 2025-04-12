@@ -28,7 +28,7 @@ import { useEffect } from "react";
 // import { uploadImage } from "@/api/update-image";
 
 const storeProfileSchema = z.object({
-  name: z.string().min(1),
+  store_name: z.string().min(1),
   description: z.string().nullable(),
   // avatarUrl: z.string().nullable(),
 });
@@ -57,8 +57,8 @@ export function StoreProfileDialog() {
   } = useForm<StoreProfileSchema>({
     resolver: zodResolver(storeProfileSchema),
     defaultValues: {
-      name: "",
-      description: "",
+      store_name: managedStore?.store_name ?? "",
+      description: managedStore?.description ?? "",
       // avatarUrl: managedStore?.avatarUrl ?? null,
     },
   });
@@ -66,7 +66,7 @@ export function StoreProfileDialog() {
   useEffect(() => {
     if (managedStore) {
       reset({
-        name: managedStore.name,
+        store_name: managedStore.store_name,
         description: managedStore.description,
       });
     }
@@ -76,7 +76,7 @@ export function StoreProfileDialog() {
     mutationFn: updateProfile,
     onMutate({ name, description /**avatarUrl */ }) {
       const { cached } = updateManagedStoreCache({
-        name,
+        store_name: name,
         description,
         // avatarUrl,
       });
@@ -91,7 +91,7 @@ export function StoreProfileDialog() {
   });
 
   function updateManagedStoreCache({
-    name,
+    store_name,
     description,
     // avatarUrl,
   }: StoreProfileSchema) {
@@ -102,7 +102,7 @@ export function StoreProfileDialog() {
     if (cached) {
       queryClient.setQueryData<GetManagedStoreResponse>(["managed-store"], {
         ...cached,
-        name,
+        store_name,
         description,
         // avatarUrl,
       });
@@ -121,7 +121,7 @@ export function StoreProfileDialog() {
       //   }
 
       await updateProfileFn({
-        name: data.name,
+        name: data.store_name,
         description: data.description,
         // avatarUrl: data.avatarUrl,
       });
@@ -166,7 +166,11 @@ export function StoreProfileDialog() {
             <Label className="text-right" htmlFor="name">
               Nome
             </Label>
-            <Input className="col-span-3" id="name" {...register("name")} />
+            <Input
+              className="col-span-3"
+              id="name"
+              {...register("store_name")}
+            />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">

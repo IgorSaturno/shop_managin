@@ -43,7 +43,7 @@ export function AccountMenu() {
   });
 
   return (
-    <>
+    <Dialog>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -53,7 +53,7 @@ export function AccountMenu() {
             {isLoadingManagedStore ? (
               <Skeleton className="h-4 w-40" />
             ) : (
-              managedStore?.name
+              managedStore?.store_name
             )}
             <ChevronDown className="h-4 w-4" />
           </Button>
@@ -76,11 +76,12 @@ export function AccountMenu() {
             )}
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-
-          <DropdownMenuItem onSelect={() => setDialogOpen(true)}>
-            <Building className="mr-2 h-4 w-4" />
-            <span>Perfil da loja</span>
-          </DropdownMenuItem>
+          <DialogTrigger asChild>
+            <DropdownMenuItem onSelect={() => setDialogOpen(true)}>
+              <Building className="mr-2 h-4 w-4" />
+              <span>Perfil da loja</span>
+            </DropdownMenuItem>
+          </DialogTrigger>
 
           <DropdownMenuItem
             asChild
@@ -99,6 +100,6 @@ export function AccountMenu() {
           <StoreProfileDialog />
         </Dialog>
       )}
-    </>
+    </Dialog>
   );
 }

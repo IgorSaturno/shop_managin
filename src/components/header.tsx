@@ -1,4 +1,11 @@
-import { Home, List, Notebook, PackageSearch, ShoppingBag } from "lucide-react";
+import {
+  Home,
+  List,
+  ListTree,
+  Notebook,
+  PackageSearch,
+  ShoppingBag,
+} from "lucide-react";
 import { ThemeToggle } from "./theme/theme-toogle";
 import { AccountMenu } from "./account-menu";
 import { Separator } from "./ui/separator";
@@ -28,6 +35,10 @@ export function Header() {
           <NavLink to="/products">
             <PackageSearch className="h-4 w-4" />
             Products
+          </NavLink>
+          <NavLink to="/attributes">
+            <ListTree className="h-4 w-4" />
+            Attributes
           </NavLink>
         </nav>
 

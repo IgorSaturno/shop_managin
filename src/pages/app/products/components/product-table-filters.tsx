@@ -87,9 +87,9 @@ export function ProductTableFilters() {
     queryFn: async () => {
       const data = await getTags();
       return data
-        .filter((tag) => tag.id.trim() !== "" && tag.tag_name.trim() !== "")
+        .filter((tag) => tag.tag_id.trim() !== "" && tag.tag_name.trim() !== "")
         .map((tag) => ({
-          value: tag.id,
+          value: tag.tag_id,
           label: tag.tag_name,
         }));
     },
@@ -293,14 +293,14 @@ export function ProductTableFilters() {
               </Select>
             )}
           />
-          <Button
+          {/* <Button
             type="button"
             variant="outline"
             size="xs"
             onClick={() => setIsTagsModalOpen(true)}
           >
             Gerenciar
-          </Button>
+          </Button> */}
         </div>
 
         {/* Filtro de Categorias */}
@@ -327,14 +327,14 @@ export function ProductTableFilters() {
               </Select>
             )}
           />
-          <Button
+          {/* <Button
             type="button"
             variant="outline"
             size="xs"
             onClick={() => setIsCategoryModalOpen(true)}
           >
             Gerenciar
-          </Button>
+          </Button> */}
         </div>
 
         {/* Filtro de Marcas */}
@@ -361,14 +361,14 @@ export function ProductTableFilters() {
               </Select>
             )}
           />
-          <Button
+          {/* <Button
             type="button"
             variant="outline"
             size="xs"
             onClick={() => setIsBrandModalOpen(true)}
           >
             Gerenciar
-          </Button>
+          </Button> */}
         </div>
       </div>
 
