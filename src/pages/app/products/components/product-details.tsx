@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
+import { api } from "@/lib/axios";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -32,6 +33,32 @@ export function ProductDetails({
     queryFn: () => GetProductDetails({ productId }),
     enabled: open,
   });
+
+  const { data: categories } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const response =
+        await api.get<Array<{ value: string; label: string }>>("/categories");
+      return response.data;
+    },
+  });
+
+  // Buscar lista de marcas
+  const { data: brands } = useQuery({
+    queryKey: ["brands"],
+    queryFn: async () => {
+      const response =
+        await api.get<Array<{ value: string; label: string }>>("/brands");
+      return response.data;
+    },
+  });
+
+  const categoryNames =
+    categories
+      ?.filter((category) => product?.categoryId?.includes(category.value))
+      .map((category) => category.label) || "N/A";
+  const brandName = brands?.find((brand) => brand.value === product?.brandId)
+    ?.label || ["N/A"];
 
   useEffect(() => {
     if (product && product.images.length > 0) {
@@ -61,14 +88,12 @@ export function ProductDetails({
                   Categoria
                 </TableCell>
                 <TableCell className="text-right">
-                  {product?.category}
+                  {categoryNames.join(", ")}
                 </TableCell>
               </TableRow>
               <TableRow>
                 <TableCell className="text-muted-foreground">Marca</TableCell>
-                <TableCell className="text-right">
-                  {product?.subBrand}
-                </TableCell>
+                <TableCell className="text-right">{brandName}</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell className="text-muted-foreground">Tags</TableCell>
@@ -82,6 +107,26 @@ export function ProductDetails({
                         {tag}
                       </span>
                     ))}
+                  </div>
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="text-muted-foreground">Cupons</TableCell>
+                <TableCell className="text-right">
+                  <div className="flex flex-wrap gap-1">
+                    {product.coupons?.map((couponCode, index) => (
+                      <span
+                        key={`${product.productId}-${couponCode}-${index}`}
+                        className="rounded-full bg-purple-100 px-2 py-1 text-xs text-purple-800"
+                      >
+                        {couponCode}
+                      </span>
+                    ))}
+                    {product.coupons?.length === 0 && (
+                      <span className="text-xs text-muted-foreground/70">
+                        Nenhum cupom
+                      </span>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

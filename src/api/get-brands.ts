@@ -8,6 +8,11 @@ export interface GetBrandsResponse {
 }
 
 export async function getBrands(): Promise<GetBrandsResponse[]> {
-  const response = await api.get<GetBrandsResponse[]>("/brands");
-  return response.data;
+  const response = await api.get<{ value: string; label: string }[]>("/brands");
+  return response.data.map((brand) => ({
+    brand_id: brand.value,
+    brand_name: brand.label,
+    slug: "",
+    storeId: "",
+  }));
 }

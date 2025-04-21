@@ -13,7 +13,7 @@ function App() {
   return (
     <HelmetProvider>
       <ThemeProvider storageKey="vibrante-theme" defaultTheme="dark">
-        <Helmet titleTemplate="%s | Vibrante" />
+        <Helmet titleTemplate="%s | Shop-managin" />
         <Toaster richColors />
         <QueryClientProvider client={queryClient}>
           <RouterProvider router={router}></RouterProvider>

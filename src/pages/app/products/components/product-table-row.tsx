@@ -28,9 +28,10 @@ interface ProductTableRowProps {
     stock: number;
     sku: string;
     isFeatured: boolean;
-    categoryId: string; // ID da categoria (vindo do backend)
+    categoryIds: string[]; // ID da categoria (vindo do backend)
     brandId: string; // ID da marca (vindo do backend)
     tags?: string[];
+    coupons: Array<{ code: string }>;
     images: string[];
   };
   refresh: () => void;
@@ -60,9 +61,9 @@ export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
     },
   });
 
-  const categoryName =
-    categories?.find((category) => category.value === product.categoryId)
-      ?.label || "N/A";
+  const categoryNames = categories
+    ?.filter((category) => product.categoryIds?.includes(category.value))
+    .map((category) => category.label) || ["N/A"];
   const brandName =
     brands?.find((brand) => brand.value === product.brandId)?.label || "N/A";
 
@@ -105,7 +106,7 @@ export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
       </TableCell>
       <TableCell className="font-medium">{product.productName}</TableCell>
       <TableCell className="hidden text-muted-foreground sm:table-cell sm:w-[180px]">
-        {categoryName}
+        {categoryNames.join(", ")}
       </TableCell>
       <TableCell className="hidden text-muted-foreground sm:table-cell sm:w-[180px]">
         {brandName}
@@ -121,6 +122,24 @@ export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
               {tag}
             </span>
           ))}
+        </div>
+      </TableCell>
+
+      <TableCell className="font-medium sm:w-[120px]">
+        <div className="flex flex-wrap gap-1">
+          {product.coupons?.map((coupon, index) => (
+            <span
+              key={`${product.productId}-${coupon.code}-${index}`}
+              className="rounded-full bg-purple-100 px-2 py-1 text-xs text-purple-800"
+            >
+              {coupon.code}
+            </span>
+          ))}
+          {product.coupons?.length === 0 && (
+            <span className="text-xs text-muted-foreground/70">
+              Nenhum cupom
+            </span>
+          )}
         </div>
       </TableCell>
 
@@ -176,7 +195,7 @@ export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
         <div className="flex gap-2">
           <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
             <DialogTrigger asChild>
-              <Button variant="destructive" size="xs">
+              <Button variant="ghost" size="xs">
                 <Trash className="mr-2 h-3 w-3" />
                 Remover
               </Button>

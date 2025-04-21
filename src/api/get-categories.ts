@@ -7,6 +7,11 @@ export interface GetCategoryResponse {
 }
 
 export async function getCategories(): Promise<GetCategoryResponse[]> {
-  const response = await api.get<GetCategoryResponse[]>("/categories");
-  return response.data;
+  const response =
+    await api.get<{ value: string; label: string }[]>("/categories");
+  return response.data.map((category) => ({
+    category_id: category.value,
+    category_name: category.label,
+    storeId: "",
+  }));
 }

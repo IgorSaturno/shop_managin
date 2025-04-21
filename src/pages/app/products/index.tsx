@@ -31,7 +31,7 @@ export default function Products() {
   const productName = searchParams.get("productName");
   const productId = searchParams.get("productId");
   const status = searchParams.get("status");
-  const categoryId = searchParams.get("categoryId");
+  const categoryIds = searchParams.get("categoryId");
   const brandId = searchParams.get("brandId");
   const tags = searchParams.get("tags")?.split(",") || null;
 
@@ -48,7 +48,7 @@ export default function Products() {
         productName,
         productId,
         status,
-        categoryId,
+        categoryIds,
         brandId,
         tags,
       },
@@ -59,7 +59,7 @@ export default function Products() {
         productName,
         productId,
         status: status === "all" ? null : status,
-        categoryId: categoryId === "all" ? null : categoryId,
+        categoryIds: categoryIds === "all" ? null : categoryIds?.split(","),
         brandId: brandId === "all" ? null : brandId,
         tags,
       }),
@@ -128,9 +128,10 @@ export default function Products() {
                   <TableHead className="hidden w-[180px] sm:table-cell">
                     Sub Marca
                   </TableHead>
-                  <TableHead className="hidden w-[200px] sm:table-cell">
+                  <TableHead className="hidden w-[120px] sm:table-cell">
                     Tags
                   </TableHead>
+                  <TableHead className="w-[120px]">Cupons</TableHead>
                   <TableHead className="w-[120px]">Estoque</TableHead>
                   <TableHead className="w-[140px]">Preço</TableHead>
                   <TableHead className="w-[164px]">Status</TableHead>

@@ -11,10 +11,11 @@ export interface GetProductDetailsResponse {
   priceInCents: number;
   stock: number;
   sku: string;
-  category: string;
-  subBrand: string;
+  categoryId: string;
+  brandId: string;
   tags: string[];
   status: "available" | "unavailable" | "archived";
+  coupons: string[];
   images: string[];
   createdAt: string;
 }

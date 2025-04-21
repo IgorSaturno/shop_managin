@@ -30,7 +30,7 @@ import { createTag } from "@/api/create-tag";
 import { getTags } from "@/api/get-tags";
 import { deleteCategory } from "@/api/delete-category";
 import { deleteBrand } from "@/api/delete-brand";
-import { deleteTag } from "@/api/delete.tag";
+import { deleteTag } from "@/api/delete-tag";
 
 const productFiltersSchema = z.object({
   productId: z.string().optional(),

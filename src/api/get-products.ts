@@ -5,7 +5,7 @@ export interface GetProductsQuery {
   pageIndex?: number;
   productId?: string | null;
   status?: string | null;
-  categoryId?: string | null;
+  categoryIds?: string[] | null;
   brandId?: string | null;
   tags?: string[] | null;
 }
@@ -15,7 +15,7 @@ export interface GetProductsResponse {
     productId: string;
     productName: string;
     priceInCents: number;
-    categoryId: string; // Alterado para ID
+    categoryIds: string[]; // Alterado para ID
     brandId: string; // Alterado para ID
     tags: string[];
     stock: number;
@@ -24,6 +24,7 @@ export interface GetProductsResponse {
     status: "available" | "unavailable" | "archived";
     createdAt: string;
     description: string;
+    coupons: Array<{ code: string }>;
     images: string[];
   }[];
   meta: {
@@ -38,7 +39,7 @@ export async function getProducts({
   productId,
   productName,
   status,
-  categoryId,
+  categoryIds,
   brandId,
   tags,
 }: GetProductsQuery) {
@@ -48,7 +49,7 @@ export async function getProducts({
       pageIndex,
       productId,
       status: status !== "all" ? status : undefined,
-      categoryId: categoryId !== "all" ? categoryId : undefined,
+      categoryIds: categoryIds?.join(","), // Converte array para string separada por vírgulas
       brandId: brandId !== "all" ? brandId : undefined,
       tags: tags?.join(","), // Converte array para string separada por vírgulas
     },

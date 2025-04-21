@@ -12,8 +12,3 @@ export async function createCategory(name: string) {
   });
   return response.data;
 }
-
-// export async function listCategories() {
-//   const response = await api.get<Category[]>("/categories");
-//   return response.data;
-// }

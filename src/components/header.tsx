@@ -36,7 +36,7 @@ export function Header() {
             <PackageSearch className="h-4 w-4" />
             Products
           </NavLink>
-          <NavLink to="/attributes">
+          <NavLink to="/attributes-management">
             <ListTree className="h-4 w-4" />
             Attributes
           </NavLink>
