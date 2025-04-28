@@ -1,7 +1,6 @@
 import { createCoupon } from "@/api/create-coupon";
 import { Button } from "@/components/ui/button";
 import { DateRangePickerValidate } from "@/components/ui/date-range-picker-validate";
-
 import {
   Dialog,
   DialogContent,
@@ -10,27 +9,24 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  FormControl,
   Form,
   FormField,
   FormItem,
   FormLabel,
+  FormControl,
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-
 import {
   Select,
-  SelectContent,
-  SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectContent,
+  SelectItem,
 } from "@/components/ui/select";
-
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
-
-import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -39,80 +35,81 @@ const couponFormSchema = z
     code: z.string().min(3, "Código deve ter pelo menos 3 caracteres"),
     discountType: z.enum(["percentage", "fixed"]),
     discountValue: z.number().min(1, "Valor deve ser maior que 0"),
-    active: z.boolean(),
+    minimumOrder: z.string().optional(),
+    maxUses: z.number().min(1).optional(),
     validFrom: z
       .date()
-      .refine((date) => date >= new Date(new Date().setHours(0, 0, 0, 0))),
-    validUntil: z
-      .date()
-      .refine((date) => date >= new Date(new Date().setHours(0, 0, 0, 0))),
+      .refine((d) => d >= new Date(new Date().setHours(0, 0, 0, 0)), {
+        message: "A data inicial não pode ser no passado",
+      }),
+    validUntil: z.date(),
+    active: z.boolean(),
   })
-  .refine((data) => data.validUntil > data.validFrom, {
-    message: "Data final deve ser posterior à data inicial",
-    path: ["validUntil"],
+  .superRefine((data, ctx) => {
+    if (data.validUntil < data.validFrom) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Data final deve ser após a data inicial",
+        path: ["validUntil"],
+      });
+    }
   });
 
-type CouponFormData = z.infer<typeof couponFormSchema>;
-
-interface CouponFormDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSuccess: () => void;
-}
+type CouponFormValues = z.infer<typeof couponFormSchema>;
 
 export function CouponFormDialog({
   open,
   onOpenChange,
   onSuccess,
-}: CouponFormDialogProps) {
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  onSuccess: () => void;
+}) {
   const queryClient = useQueryClient();
 
-  const form = useForm<CouponFormData>({
+  const form = useForm<CouponFormValues>({
     resolver: zodResolver(couponFormSchema),
     defaultValues: {
       code: "",
       discountType: "percentage",
       discountValue: 0,
+      minimumOrder: "",
+      maxUses: undefined,
       validFrom: new Date(),
-      validUntil: new Date(new Date().setDate(new Date().getDate() + 7)),
+      validUntil: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
       active: true,
     },
   });
 
-  async function onSubmit(data: CouponFormData) {
+  async function onSubmit(values: CouponFormValues) {
     try {
-      // Adaptação para enviar as datas corretamente para a API
       await createCoupon({
-        code: data.code,
-        discountType: data.discountType,
-        discountValue: data.discountValue,
-        validFrom: data.validFrom || new Date(), // Garante valor padrão
-        validUntil: data.validUntil,
-        active: data.active,
+        code: values.code,
+        discountType: values.discountType,
+        discountValue: values.discountValue,
+        minimumOrder: values.minimumOrder,
+        maxUses: values.maxUses,
+        validFrom: values.validFrom.toISOString(),
+        validUntil: values.validUntil.toISOString(),
+        active: values.active,
       });
-
-      await queryClient.invalidateQueries({ queryKey: ["coupons"] });
-      form.reset();
-      onOpenChange(false);
+      queryClient.invalidateQueries({ queryKey: ["coupons"] });
+      toast.success("Cupom criado!");
       onSuccess();
-      toast.success("Cupom criado com sucesso!");
-    } catch (err) {
-      console.error("Erro detalhado:", err);
-      toast.error(
-        (err as any).response?.data?.message ||
-          "Falha ao criar cupom. Verifique os dados.",
-      );
+      onOpenChange(false);
+      form.reset();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message ?? "Erro ao criar cupom");
     }
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Criar Novo Cupom</DialogTitle>
-          <DialogDescription>
-            Preencha os detalhes do novo cupom de desconto
-          </DialogDescription>
+          <DialogTitle>Novo Cupom</DialogTitle>
+          <DialogDescription>Preencha os dados do cupom</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
@@ -120,11 +117,11 @@ export function CouponFormDialog({
             <FormField
               control={form.control}
               name="code"
-              render={({ field }) => (
+              render={({ field, fieldState }) => (
                 <FormItem>
                   <FormLabel>Código</FormLabel>
                   <FormControl>
-                    <Input placeholder="EXEMPLO123" {...field} />
+                    <Input {...field} placeholder="EXEMPLO123" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -137,17 +134,17 @@ export function CouponFormDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Tipo de Desconto</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
+                  <FormControl>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione o tipo" />
+                        <SelectValue placeholder="Selecione..." />
                       </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="percentage">Percentual</SelectItem>
-                      <SelectItem value="fixed">Valor Fixo</SelectItem>
-                    </SelectContent>
-                  </Select>
+                      <SelectContent>
+                        <SelectItem value="percentage">Percentual</SelectItem>
+                        <SelectItem value="fixed">Valor Fixo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -158,25 +155,10 @@ export function CouponFormDialog({
               name="discountValue"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>
-                    {form.watch("discountType") === "percentage"
-                      ? "Porcentagem (%)"
-                      : "Valor (R$)"}
-                  </FormLabel>
+                  <FormLabel>Valor</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
-                      min="0"
-                      step={
-                        form.watch("discountType") === "percentage"
-                          ? "1"
-                          : "0.01"
-                      }
-                      placeholder={
-                        form.watch("discountType") === "percentage"
-                          ? "Ex: 10%"
-                          : "Ex: 50,00"
-                      }
                       {...field}
                       onChange={(e) => field.onChange(Number(e.target.value))}
                     />
@@ -188,34 +170,86 @@ export function CouponFormDialog({
 
             <FormField
               control={form.control}
+              name="minimumOrder"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Pedido Mínimo</FormLabel>
+                  <FormControl>
+                    <Input type="number" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="maxUses"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Usos Máximos</FormLabel>
+                  <FormControl>
+                    <Input type="number" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="validFrom"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Período</FormLabel>
+                  <FormControl>
+                    <DateRangePickerValidate
+                      date={{
+                        from: field.value,
+                        to: form.getValues("validUntil"),
+                      }}
+                      onDateChange={(range) => {
+                        if (range?.from) {
+                          field.onChange(range.from);
+                          form.setValue("validUntil", range.to!);
+                        }
+                      }}
+                      disabled={{ before: new Date() }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="active"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                  {/* <div className="space-y-0.5"> */}
-                  <FormLabel className="text-base">Ativo</FormLabel>
-                  {/* </div> */}
+                <FormItem className="flex items-center space-x-2">
                   <FormControl>
                     <input
                       type="checkbox"
                       checked={field.value}
                       onChange={(e) => field.onChange(e.target.checked)}
-                      className="h-6 w-6"
+                      className="h-4 w-4"
                     />
                   </FormControl>
+                  <FormLabel>Ativo</FormLabel>
+                  <FormMessage />
                 </FormItem>
               )}
             />
 
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end space-x-2 pt-4">
               <Button
                 type="button"
                 variant="outline"
-                size="xs"
                 onClick={() => onOpenChange(false)}
               >
                 Cancelar
               </Button>
-              <Button variant="success" size="xs" type="submit">
+              <Button type="submit" disabled={form.formState.isSubmitting}>
                 Criar Cupom
               </Button>
             </div>

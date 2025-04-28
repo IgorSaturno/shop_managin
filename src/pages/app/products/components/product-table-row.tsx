@@ -17,6 +17,8 @@ import { showToast } from "@/components/toast";
 import { api } from "@/lib/axios";
 import { useQuery } from "@tanstack/react-query";
 import { deleteProduct } from "@/api/delete-product";
+import { Badge } from "@/components/ui/badge";
+import { calculateDiscountedPrice } from "@/lib/utils";
 
 interface ProductTableRowProps {
   product: {
@@ -31,7 +33,11 @@ interface ProductTableRowProps {
     categoryIds: string[]; // ID da categoria (vindo do backend)
     brandId: string; // ID da marca (vindo do backend)
     tags?: string[];
-    coupons: Array<{ code: string }>;
+    coupons: Array<{
+      code: string;
+      discountType: "percentage" | "fixed";
+      discountValue: number;
+    }>;
     images: string[];
   };
   refresh: () => void;
@@ -127,13 +133,16 @@ export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
 
       <TableCell className="font-medium sm:w-[120px]">
         <div className="flex flex-wrap gap-1">
-          {product.coupons?.map((coupon, index) => (
-            <span
-              key={`${product.productId}-${coupon.code}-${index}`}
-              className="rounded-full bg-purple-100 px-2 py-1 text-xs text-purple-800"
+          {product.coupons?.map((coupon) => (
+            <Badge
+              key={coupon.code}
+              variant="outline"
+              className="mr-1 text-xs"
+              title={`Desconto: ${coupon.discountValue}${coupon.discountType === "percentage" ? "%" : "R$"}`}
             >
-              {coupon.code}
-            </span>
+              {coupon.code} ({coupon.discountValue}
+              {coupon.discountType === "percentage" ? "%" : "R$"})
+            </Badge>
           ))}
           {product.coupons?.length === 0 && (
             <span className="text-xs text-muted-foreground/70">
@@ -144,13 +153,37 @@ export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
       </TableCell>
 
       <TableCell className="font-medium sm:w-[120px]">
-        {product.stock} unidades
+        {product.stock} uni...
       </TableCell>
       <TableCell className="font-medium sm:w-[140px]">
-        {(product.priceInCents / 100).toLocaleString("pt-BR", {
-          style: "currency",
-          currency: "BRL",
-        })}
+        {product.coupons?.length > 0 ? (
+          <div className="flex flex-col">
+            <span className="text-xs text-muted-foreground/60 line-through">
+              {(product.priceInCents / 100).toLocaleString("pt-BR", {
+                style: "currency",
+                currency: "BRL",
+              })}
+            </span>
+            <span className="font-semibold text-green-600">
+              {(
+                calculateDiscountedPrice(
+                  product.priceInCents,
+                  product.coupons,
+                ) / 100
+              ).toLocaleString("pt-BR", {
+                style: "currency",
+                currency: "BRL",
+              })}
+            </span>
+          </div>
+        ) : (
+          <span>
+            {(product.priceInCents / 100).toLocaleString("pt-BR", {
+              style: "currency",
+              currency: "BRL",
+            })}
+          </span>
+        )}
       </TableCell>
 
       {/* Status */}

@@ -115,9 +115,9 @@ export default function ProductEditDetails({
     queryFn: async () => {
       const data = await getTags();
       return data.map((tag, index) => ({
-        value: tag.id,
+        value: tag.tag_id,
         label: tag.tag_name,
-        key: `tag-${tag.id}-${index}`,
+        key: `tag-${tag.tag_id}-${index}`,
       }));
     },
   });
@@ -129,7 +129,7 @@ export default function ProductEditDetails({
     try {
       await updateProduct({
         ...data,
-        pricepriceInCents: Math.round(data.price * 100), // Converter para centavos
+        priceInCents: Math.round(data.price * 100), // Converter para centavos
       });
       refresh();
       toast.success("Produto atualizado!");

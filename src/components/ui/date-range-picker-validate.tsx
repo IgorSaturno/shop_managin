@@ -1,7 +1,6 @@
 "use client";
 
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { addDays, format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
@@ -14,27 +13,30 @@ import {
 } from "@/components/ui/popover";
 
 interface DateRangePickerProps {
-  date: DateRange;
+  date?: DateRange | undefined;
   onDateChange: (date: DateRange | undefined) => void;
+  disabled?: { before?: Date; after?: Date };
+  fromDate?: Date;
   className?: string;
 }
-
-const isValidDate = (date: any) => {
-  return date instanceof Date && !isNaN(date.getTime());
-};
 
 export function DateRangePickerValidate({
   className,
   date,
   onDateChange,
+  disabled,
+  fromDate,
 }: DateRangePickerProps) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  // Adicione validação das datas
-  const validatedDate = {
-    from: isValidDate(date?.from) ? date.from : new Date(),
-    to: isValidDate(date?.to) ? date.to : new Date(),
-  };
+  const disableMatcher = disabled
+    ? // se vier both
+      disabled.before != null && disabled.after != null
+      ? { before: disabled.before, after: disabled.after } // DateInterval
+      : disabled.before != null
+        ? { before: disabled.before } // DateBefore
+        : disabled.after != null
+          ? { after: disabled.after } // DateAfter
+          : undefined
+    : undefined;
 
   return (
     <div className={cn("grid gap-2", className)}>
@@ -44,34 +46,36 @@ export function DateRangePickerValidate({
             id="date"
             variant={"outline"}
             className={cn(
-              "w-full justify-start text-left font-normal",
-              !validatedDate?.from && "text-muted-foreground",
+              "w-[300px] justify-start text-left font-normal",
+              !date && "text-muted-foreground",
             )}
           >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {validatedDate?.from ? (
-              validatedDate.to ? (
+            <CalendarIcon />
+            {date?.from ? (
+              date.to ? (
                 <>
-                  {format(validatedDate.from, "dd/MM/yyyy", { locale: ptBR })} -{" "}
-                  {format(validatedDate.to, "dd/MM/yyyy", { locale: ptBR })}
+                  {format(date.from, "LLL dd, y")} -{" "}
+                  {format(date.to, "LLL dd, y")}
                 </>
               ) : (
-                format(validatedDate.from, "dd/MM/yyyy", { locale: ptBR })
+                format(date.from, "LLL dd, y")
               )
             ) : (
-              <span>Selecione o período</span>
+              <span>Pick a date</span>
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
+        <PopoverContent className="z-[9999] w-auto p-0" align="start">
           <Calendar
+            className="pointer-events-auto"
             initialFocus
             mode="range"
-            defaultMonth={validatedDate?.from || today}
-            selected={validatedDate}
+            defaultMonth={date?.from || fromDate || addDays(new Date(), 1)}
+            selected={date}
             onSelect={onDateChange}
             numberOfMonths={2}
-            disabled={{ before: today }}
+            disabled={disableMatcher}
+            fromDate={fromDate}
           />
         </PopoverContent>
       </Popover>

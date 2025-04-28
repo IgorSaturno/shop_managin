@@ -46,7 +46,7 @@ export function ManagementTableBrands() {
           className="gap-2"
         >
           <CirclePlus className="h-4 w-4" />
-          Nova Categoria
+          Nova Marca
         </Button>
       </div>
       <Table>

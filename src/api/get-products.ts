@@ -24,7 +24,11 @@ export interface GetProductsResponse {
     status: "available" | "unavailable" | "archived";
     createdAt: string;
     description: string;
-    coupons: Array<{ code: string }>;
+    coupons: Array<{
+      code: string;
+      discountType: "percentage" | "fixed";
+      discountValue: number;
+    }>;
     images: string[];
   }[];
   meta: {
