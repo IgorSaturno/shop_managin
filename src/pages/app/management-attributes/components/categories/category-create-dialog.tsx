@@ -1,31 +1,34 @@
-import { createBrand } from "@/api/create-brand";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { toast } from "sonner";
+import { useForm } from "react-hook-form";
 import {
   Form,
-  FormControl,
   FormField,
   FormItem,
   FormLabel,
+  FormControl,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { createTag } from "@/api/create-tag";
 import { useQueryClient } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
+import { DialogDescription } from "@radix-ui/react-dialog";
 
-interface BrandFormDialogProps {
+interface CategoryFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
 }
 
-export function BrandFormDialog({ open, onOpenChange }: BrandFormDialogProps) {
+export function CategoryCreateDialog({
+  open,
+  onOpenChange,
+}: CategoryFormDialogProps) {
   const queryClient = useQueryClient();
   const form = useForm({
     defaultValues: {
@@ -33,20 +36,20 @@ export function BrandFormDialog({ open, onOpenChange }: BrandFormDialogProps) {
     },
   });
 
-  const onSubmit = async (value: { name: string }) => {
+  const onSubmit = async (values: { name: string }) => {
     try {
-      if (!value.name.trim()) {
-        toast.warning("Digite um nome para a marca");
+      if (!values.name.trim()) {
+        toast.warning("Digite um nome para a categoria");
         return;
       }
-      await createBrand(value.name);
-      await queryClient.invalidateQueries({ queryKey: ["brands"] });
+      await createTag(values.name);
+      await queryClient.invalidateQueries({ queryKey: ["categories"] });
       form.reset();
       onOpenChange(false);
-      toast.success("Marca criada com sucesso!");
+      toast.success("Categoria criada com sucesso!");
     } catch (error) {
-      console.error("Erro ao criar marca:", error);
-      toast.error("Erro ao criar marca.");
+      console.error("Erro ao criar Categoria:", error);
+      toast.error("Erro ao criar Categoria.");
     }
   };
 
@@ -54,23 +57,27 @@ export function BrandFormDialog({ open, onOpenChange }: BrandFormDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Criar Nova Marca</DialogTitle>
-          <DialogDescription>Digite o nome da nova Marca.</DialogDescription>
+          <DialogTitle>Criar Nova Categoria</DialogTitle>
+          <DialogDescription>
+            Preencha os detalhes da nova Categoria abaixo.
+          </DialogDescription>
         </DialogHeader>
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="name"
               render={({ field }) => (
-                <FormItem className="flex flex-col gap-2">
-                  <FormLabel>Nome</FormLabel>
+                <FormItem>
+                  <FormLabel>Nome da Categoria</FormLabel>
                   <FormControl>
-                    <Input placeholder="Nome da marca" {...field} />
+                    <Input {...field} placeholder="Ex: Promoção" />
                   </FormControl>
                 </FormItem>
               )}
             />
+
             <div className="flex justify-end gap-2">
               <Button
                 type="button"

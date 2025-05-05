@@ -57,7 +57,7 @@ const couponFormSchema = z
 
 type CouponFormValues = z.infer<typeof couponFormSchema>;
 
-export function CouponFormDialog({
+export function CouponCreateDialog({
   open,
   onOpenChange,
   onSuccess,
@@ -117,7 +117,7 @@ export function CouponFormDialog({
             <FormField
               control={form.control}
               name="code"
-              render={({ field, fieldState }) => (
+              render={({ field }) => (
                 <FormItem>
                   <FormLabel>Código</FormLabel>
                   <FormControl>
@@ -153,33 +153,61 @@ export function CouponFormDialog({
             <FormField
               control={form.control}
               name="discountValue"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Valor</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      {...field}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                const display = field.value.toLocaleString("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                });
+
+                return (
+                  <FormItem>
+                    <FormLabel>Valor (R$)</FormLabel>
+                    <FormControl>
+                      <Input
+                        value={display}
+                        onChange={(e) => {
+                          // tira tudo que não é dígito ou vírgula
+                          const cleaned = e.target.value.replace(/[^\d,]/g, "");
+                          // vírgula → ponto
+                          const asNumber = parseFloat(
+                            cleaned.replace(",", "."),
+                          );
+                          field.onChange(isNaN(asNumber) ? 0 : asNumber);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
 
             <FormField
               control={form.control}
               name="minimumOrder"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Pedido Mínimo</FormLabel>
-                  <FormControl>
-                    <Input type="number" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                const val = field.value ? parseFloat(field.value) : 0;
+                const display = val.toLocaleString("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                });
+                return (
+                  <FormItem>
+                    <FormLabel>Pedido Mínimo</FormLabel>
+                    <FormControl>
+                      <Input
+                        value={display}
+                        onChange={(e) => {
+                          const cleaned = e.target.value.replace(/[^\d,]/g, "");
+                          const num = parseFloat(cleaned.replace(",", "."));
+                          field.onChange(isNaN(num) ? "" : num.toString());
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
 
             <FormField
@@ -189,7 +217,12 @@ export function CouponFormDialog({
                 <FormItem>
                   <FormLabel>Usos Máximos</FormLabel>
                   <FormControl>
-                    <Input type="number" {...field} />
+                    <Input
+                      type="number"
+                      {...field}
+                      onChange={(e) => field.onChange(Number(e.target.value))}
+                      value={field.value ?? ""}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

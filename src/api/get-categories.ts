@@ -1,17 +1,38 @@
 import { api } from "@/lib/axios";
 
-export interface GetCategoryResponse {
-  category_id: string;
-  category_name: string;
-  storeId: string;
+export interface GetCategoriesQuery {
+  pageIndex?: number;
+  categoryId?: string | null;
+  categoryName?: string | null;
 }
 
-export async function getCategories(): Promise<GetCategoryResponse[]> {
-  const response =
-    await api.get<{ value: string; label: string }[]>("/categories");
-  return response.data.map((category) => ({
-    category_id: category.value,
-    category_name: category.label,
-    storeId: "",
-  }));
+export interface Category {
+  category_id: string;
+  category_name: string;
+  slug: string;
+  storeId: string;
+  createdAt: string;
+}
+export interface GetCategoryResponse {
+  categories: Category[];
+  meta: {
+    pageIndex: number;
+    perPage: number;
+    totalCount: number;
+  };
+}
+
+export async function getCategories({
+  pageIndex,
+  categoryId,
+  categoryName,
+}: GetCategoriesQuery): Promise<GetCategoryResponse> {
+  const response = await api.get<GetCategoryResponse>("/categories", {
+    params: {
+      pageIndex,
+      categoryId,
+      categoryName,
+    },
+  });
+  return response.data;
 }

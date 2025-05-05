@@ -2,22 +2,26 @@ import { api } from "@/lib/axios";
 
 export interface GetCouponsQueryParams {
   pageIndex?: number;
-  status?: "active" | "inactive" | "all";
+  status?: "active" | "expired" | "scheduled" | "all";
+  couponId?: string | null;
+  code?: string | null;
+  discountType?: "percentage" | "fixed";
 }
 
 export interface Coupon {
-  id: string;
+  discount_coupon_id: string;
   code: string;
   discountType: "percentage" | "fixed";
-  discountValue: number;
-  validUntil: Date;
+  discountValue: number; // reais
   validFrom: Date;
+  validUntil: Date;
+  minimumOrder: string; // reais string
+  maxUses: number;
+  usedCount: number;
   active: boolean;
-  products: Array<{ productId: string }>;
+  products: { productId: string }[];
   createdAt: Date;
   updatedAt: Date;
-  minimumOrder: string;
-  maxUses: number;
 }
 
 export interface GetCouponsResponse {
@@ -34,6 +38,9 @@ export async function getCoupons(params: GetCouponsQueryParams) {
     params: {
       pageIndex: params.pageIndex,
       status: params.status !== "all" ? params.status : undefined,
+      couponId: params.couponId ?? undefined,
+      code: params.code ?? undefined,
+      discountType: params.discountType ?? undefined,
     },
   });
 

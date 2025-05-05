@@ -1,6 +1,7 @@
 import { api } from "@/lib/axios";
 
 export interface UpdateCouponParams {
+  discount_coupon_id?: string;
   code?: string;
   discountType?: "percentage" | "fixed";
   discountValue?: number;

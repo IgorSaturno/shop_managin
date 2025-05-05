@@ -25,7 +25,7 @@ interface TagFormDialogProps {
   onSuccess: () => void;
 }
 
-export function TagFormDialog({ open, onOpenChange }: TagFormDialogProps) {
+export function TagCreateDialog({ open, onOpenChange }: TagFormDialogProps) {
   const queryClient = useQueryClient();
   const form = useForm({
     defaultValues: {

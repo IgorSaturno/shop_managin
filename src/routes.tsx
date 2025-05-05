@@ -17,7 +17,10 @@ import Products from "./pages/app/products";
 // import { Settings } from "./pages/app/settings";
 import { Customers } from "./pages/app/customers";
 
-import { ManagementAttributes } from "./pages/app/management-attributes";
+import { CategoriesManagin } from "./pages/app/management-attributes/components/categories";
+import { BrandManagin } from "./pages/app/management-attributes/components/brands";
+import { CouponsManagin } from "./pages/app/management-attributes/components/coupons";
+import { TagsManagin } from "./pages/app/management-attributes/components/tags";
 
 export const router = createBrowserRouter([
   {
@@ -31,8 +34,20 @@ export const router = createBrowserRouter([
       { path: "/products", element: <Products /> },
       { path: "/customers", element: <Customers /> },
       {
-        path: "/attributes-management",
-        element: <ManagementAttributes />,
+        path: "/attributes/tags",
+        element: <TagsManagin />,
+      },
+      {
+        path: "/attributes/categories",
+        element: <CategoriesManagin />,
+      },
+      {
+        path: "/attributes/brands",
+        element: <BrandManagin />,
+      },
+      {
+        path: "/attributes/coupons",
+        element: <CouponsManagin />,
       },
       // { path: "/user", element: <User /> },
       // { path: "/support", element: <Support /> },

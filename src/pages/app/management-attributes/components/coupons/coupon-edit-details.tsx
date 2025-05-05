@@ -21,7 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { updateCoupon } from "@/api/update-coupon";
-import { Loader2 } from "lucide-react";
+
 import { Coupon } from "@/api/get-coupons";
 import { api } from "@/lib/axios";
 import { DateRangePickerValidate } from "@/components/ui/date-range-picker-validate";
@@ -88,15 +88,20 @@ export function CouponEditDetails({
   } = useForm<CouponEditSchema>({
     resolver: zodResolver(couponEditSchema),
     defaultValues: {
-      ...coupon,
-      minimumOrder: coupon.minimumOrder?.toString() ?? "",
+      id: coupon.id,
+      code: coupon.code,
+      discountType: coupon.discountType,
+      discountValue: coupon.discountValue / 100,
+      minimumOrder: coupon.minimumOrder
+        ? (Number(coupon.minimumOrder) / 100).toFixed(2)
+        : undefined,
       maxUses: coupon.maxUses ?? undefined,
       validFrom: new Date(coupon.validFrom),
       validUntil: new Date(coupon.validUntil),
+      active: coupon.active,
     },
   });
 
-  const discountType = useWatch({ control, name: "discountType" });
   const code = useWatch({ control, name: "code" });
 
   useEffect(() => {
@@ -136,9 +141,29 @@ export function CouponEditDetails({
     };
   }, [code, coupon.code, setFormError]);
 
+  const isCouponActive = () => {
+    const now = new Date();
+    const validFrom = new Date(coupon.validFrom);
+    const validUntil = new Date(coupon.validUntil);
+    return now >= validFrom && now <= validUntil && coupon.active;
+  };
+
+  const isActive = isCouponActive();
+
   async function onSave(data: CouponEditSchema) {
     try {
-      // ... suas validações manuais antes do patch
+      if (isActive) {
+        toast.error("Alterações bloqueadas: Cupom ativo em vigência", {
+          description:
+            "Edições só são permitidas para cupons inativos ou fora do período de validade",
+          action: {
+            label: "Entendi",
+            onClick: () => {},
+          },
+        });
+        return;
+      }
+
       await updateCoupon(coupon.id, {
         ...data,
         validFrom: data.validFrom.toISOString(),
@@ -179,13 +204,25 @@ export function CouponEditDetails({
       console.error("Erro detalhado:", err);
     }
   }
+
+  const discountType = useWatch({ control, name: "discountType" });
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Editar Cupom</DialogTitle>
           <DialogDescription>Altere os dados do cupom</DialogDescription>
+          {isActive && (
+            <div className="mt-2 rounded-md bg-yellow-50 p-3 text-yellow-700">
+              <p className="text-sm">
+                Este cupom está ativo e em vigência. Alterações não são
+                permitidas.
+              </p>
+            </div>
+          )}
         </DialogHeader>
+
         <form onSubmit={handleSubmit(onSave)} className="space-y-4">
           <Controller
             name="code"
@@ -197,6 +234,7 @@ export function CouponEditDetails({
                   id="code"
                   {...field}
                   className={fieldState.error ? "border-red-500" : ""}
+                  disabled={isActive}
                 />
                 {fieldState.error && (
                   <p className="mt-1 text-sm text-red-500">
@@ -215,7 +253,11 @@ export function CouponEditDetails({
               render={({ field, fieldState }) => (
                 <div>
                   <Label>Tipo de Desconto *</Label>
-                  <Select value={field.value} onValueChange={field.onChange}>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={isActive}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione..." />
                     </SelectTrigger>
@@ -238,23 +280,43 @@ export function CouponEditDetails({
             <Controller
               name="discountValue"
               control={control}
-              render={({ field, fieldState }) => (
-                <div>
-                  <Label htmlFor="value">Valor *</Label>
-                  <Input
-                    id="value"
-                    type="number"
-                    step={discountType === "percentage" ? "1" : "0.01"}
-                    {...field}
-                    onChange={(e) => field.onChange(Number(e.target.value))}
-                  />
-                  {fieldState.error && (
-                    <p className="mt-1 text-sm text-red-500">
-                      {fieldState.error.message}
-                    </p>
-                  )}
-                </div>
-              )}
+              render={({ field, fieldState }) => {
+                const display =
+                  discountType === "percentage"
+                    ? // sem casas decimais na %
+                      `${Math.round(field.value).toLocaleString("pt-BR")}%`
+                    : // em reais com 2 decimais
+                      field.value.toLocaleString("pt-BR", {
+                        style: "currency",
+                        currency: "BRL",
+                      });
+
+                return (
+                  <div>
+                    <Label htmlFor="value">
+                      {discountType === "percentage"
+                        ? "Percentual (%)"
+                        : "Valor (R$)"}
+                    </Label>
+                    <Input
+                      id="value"
+                      value={display}
+                      disabled={isActive}
+                      onChange={(e) => {
+                        // limpa tudo que não for dígito ou vírgula
+                        const cleaned = e.target.value.replace(/[^\d,]/g, "");
+                        const num = parseFloat(cleaned.replace(",", "."));
+                        field.onChange(isNaN(num) ? 0 : num);
+                      }}
+                    />
+                    {fieldState.error && (
+                      <p className="mt-1 text-sm text-red-500">
+                        {fieldState.error.message}
+                      </p>
+                    )}
+                  </div>
+                );
+              }}
             />
           </div>
 
@@ -262,24 +324,34 @@ export function CouponEditDetails({
             <Controller
               name="minimumOrder"
               control={control}
-              render={({ field, fieldState }) => (
-                <div>
-                  <Label htmlFor="min-order">Pedido Mínimo (R$)</Label>
-                  <Input
-                    id="min-order"
-                    type="number"
-                    step="0.01"
-                    {...field}
-                    value={field.value ?? ""}
-                    onChange={(e) => field.onChange(e.target.value)}
-                  />
-                  {fieldState.error && (
-                    <p className="mt-1 text-sm text-red-500">
-                      {fieldState.error.message}
-                    </p>
-                  )}
-                </div>
-              )}
+              render={({ field, fieldState }) => {
+                // internal string → number
+                const num = field.value ? parseFloat(field.value) : 0;
+                const display = num.toLocaleString("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                });
+                return (
+                  <div>
+                    <Label htmlFor="min-order">Pedido Mínimo (R$)</Label>
+                    <Input
+                      id="min-order"
+                      value={display}
+                      disabled={isActive}
+                      onChange={(e) => {
+                        const cleaned = e.target.value.replace(/[^\d,]/g, "");
+                        const parsed = parseFloat(cleaned.replace(",", "."));
+                        field.onChange(isNaN(parsed) ? "" : parsed.toString());
+                      }}
+                    />
+                    {fieldState.error && (
+                      <p className="mt-1 text-sm text-red-500">
+                        {fieldState.error.message}
+                      </p>
+                    )}
+                  </div>
+                );
+              }}
             />
 
             <Controller
@@ -292,6 +364,7 @@ export function CouponEditDetails({
                     id="max-uses"
                     type="number"
                     min="1"
+                    disabled={isActive}
                     {...field}
                     value={field.value ?? ""}
                     onChange={(e) =>
@@ -345,10 +418,7 @@ export function CouponEditDetails({
               Cancelar
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              {isSubmitting ? "Salvando..." : "Salvar"}
+              Salvar
             </Button>
           </div>
         </form>

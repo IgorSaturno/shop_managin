@@ -5,9 +5,9 @@ export interface GetProductsQuery {
   pageIndex?: number;
   productId?: string | null;
   status?: string | null;
-  categoryIds?: string[] | null;
+  categoryId?: string | null;
   brandId?: string | null;
-  tags?: string[] | null;
+  tags?: string | null;
 }
 
 export interface GetProductsResponse {
@@ -15,9 +15,9 @@ export interface GetProductsResponse {
     productId: string;
     productName: string;
     priceInCents: number;
-    categoryIds: string[]; // Alterado para ID
+    categoryId: string; // Alterado para ID
     brandId: string; // Alterado para ID
-    tags: string[];
+    tags: string;
     stock: number;
     sku: string;
     isFeatured: boolean;
@@ -43,7 +43,7 @@ export async function getProducts({
   productId,
   productName,
   status,
-  categoryIds,
+  categoryId,
   brandId,
   tags,
 }: GetProductsQuery) {
@@ -53,9 +53,9 @@ export async function getProducts({
       pageIndex,
       productId,
       status: status !== "all" ? status : undefined,
-      categoryIds: categoryIds?.join(","), // Converte array para string separada por vírgulas
+      categoryId: categoryId !== "all" ? categoryId : undefined, // Converte array para string separada por vírgulas
       brandId: brandId !== "all" ? brandId : undefined,
-      tags: tags?.join(","), // Converte array para string separada por vírgulas
+      tags: tags !== "all" ? tags : undefined,
     },
   });
 

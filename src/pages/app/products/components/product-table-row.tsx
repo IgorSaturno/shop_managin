@@ -10,9 +10,7 @@ import {
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Search, Trash } from "lucide-react";
 import { ProductDetails } from "./product-details";
-// import ProductEditDetails from "./product-edit-details";
 import { useState } from "react";
-
 import { showToast } from "@/components/toast";
 import { api } from "@/lib/axios";
 import { useQuery } from "@tanstack/react-query";
@@ -30,8 +28,8 @@ interface ProductTableRowProps {
     stock: number;
     sku: string;
     isFeatured: boolean;
-    categoryIds: string[]; // ID da categoria (vindo do backend)
-    brandId: string; // ID da marca (vindo do backend)
+    categoryIds: string[];
+    brandId: string;
     tags?: string[];
     coupons: Array<{
       code: string;
@@ -45,42 +43,44 @@ interface ProductTableRowProps {
 
 export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  // const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
-  const { data: categories } = useQuery({
+  // Buscar categorias com valor padrão
+  const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
-      const response =
-        await api.get<Array<{ value: string; label: string }>>("/categories");
-      return response.data;
+      const response = await api.get("/categories");
+      // Garante que o retorno seja array, mesmo se a API estiver malformatada
+      return Array.isArray(response.data) ? response.data : [];
     },
   });
 
-  // Buscar lista de marcas
-  const { data: brands } = useQuery({
+  // Buscar marcas com valor padrão
+  const { data: brands = [] } = useQuery({
     queryKey: ["brands"],
     queryFn: async () => {
       const response =
         await api.get<Array<{ value: string; label: string }>>("/brands");
-      return response.data;
+      return response.data; // Altere para response.data.data se necessário
     },
   });
 
-  const categoryNames = categories
-    ?.filter((category) => product.categoryIds?.includes(category.value))
-    .map((category) => category.label) || ["N/A"];
-  const brandName =
-    brands?.find((brand) => brand.value === product.brandId)?.label || "N/A";
+  // Processar categorias
+  const categoryNames = (
+    Array.isArray(categories) 
+      ? categories
+          .filter((category) => product.categoryIds?.includes(category.value))
+          .map((category) => category.label)
+      : [] // Fallback definitivo
+  ).join(", ") || "N/A"; // Join + fallback final
 
-  // const handleEditSuccess = () => {
-  //   setIsEditOpen(false);
-  //   refresh();
-  // };
+  // Processar marca
+  const brandName =
+    brands.find((brand) => brand.value === product.brandId)?.label || "N/A";
 
   const handleDelete = async () => {
     try {
-      await deleteProduct(product.productId); // Chamada via endpoint dedicado
+      await deleteProduct(product.productId);
       showToast("Produto removido com sucesso", "success");
       setIsDeleteOpen(false);
       refresh();
@@ -89,8 +89,10 @@ export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
       console.error("Erro ao deletar produto:", error);
     }
   };
+
   return (
     <TableRow>
+      {/* Célula de Detalhes */}
       <TableCell className="sm:w-[64px]">
         <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
           <DialogTrigger asChild>
@@ -107,17 +109,23 @@ export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
         </Dialog>
       </TableCell>
 
+      {/* Conteúdo das células */}
       <TableCell className="font-mono text-xs font-medium sm:w-[100px]">
         {product.productId}
       </TableCell>
       <TableCell className="font-medium">{product.productName}</TableCell>
+
+      {/* Categorias */}
       <TableCell className="hidden text-muted-foreground sm:table-cell sm:w-[180px]">
-        {categoryNames.join(", ")}
+        {categoryNames}
       </TableCell>
+
+      {/* Marca */}
       <TableCell className="hidden text-muted-foreground sm:table-cell sm:w-[180px]">
         {brandName}
       </TableCell>
 
+      {/* Tags */}
       <TableCell className="hidden sm:table-cell">
         <div className="flex flex-wrap gap-1">
           {Array.from(new Set(product.tags ?? [])).map((tag, index) => (
@@ -131,6 +139,7 @@ export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
         </div>
       </TableCell>
 
+      {/* Cupons */}
       <TableCell className="font-medium sm:w-[120px]">
         <div className="flex flex-wrap gap-1">
           {product.coupons?.map((coupon) => (
@@ -152,9 +161,12 @@ export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
         </div>
       </TableCell>
 
+      {/* Estoque */}
       <TableCell className="font-medium sm:w-[120px]">
         {product.stock} uni...
       </TableCell>
+
+      {/* Preço */}
       <TableCell className="font-medium sm:w-[140px]">
         {product.coupons?.length > 0 ? (
           <div className="flex flex-col">
@@ -203,25 +215,6 @@ export function ProductTableRow({ product, refresh }: ProductTableRowProps) {
           </span>
         </div>
       </TableCell>
-
-      {/* Botão de Edição */}
-      {/* <TableCell className="sm:w-[132px]">
-        <div className="flex gap-2">
-          <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="xs">
-                <Pencil className="mr-2 h-3 w-3" />
-                Editar
-              </Button>
-            </DialogTrigger>
-            <ProductEditDetails
-              product={product}
-              onClose={() => setIsEditOpen(false)}
-              refresh={handleEditSuccess} // Usa função dedicada
-            />
-          </Dialog>
-        </div>
-      </TableCell> */}
 
       {/* Botão de Exclusão */}
       <TableCell className="sm:w-[132px]">

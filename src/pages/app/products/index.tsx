@@ -17,7 +17,6 @@ import { ProductTableRow } from "@/pages/app/products/components/product-table-r
 // import { Plus } from "lucide-react";
 
 // import ProductCreateDialog from "@/pages/app/products/components/product-create-dialog";
-// import { toast } from "sonner";
 import { useSearchParams } from "react-router-dom";
 import { getProducts, GetProductsResponse } from "@/api/get-products";
 import { z } from "zod";
@@ -120,7 +119,7 @@ export default function Products() {
                 <TableRow>
                   <TableHead className="w-[64px]"></TableHead>
 
-                  <TableHead className="w-[100x]">ID</TableHead>
+                  <TableHead className="w-[100px]">ID</TableHead>
                   <TableHead>Nome</TableHead>
                   <TableHead className="hidden w-[180px] sm:table-cell">
                     Categoria

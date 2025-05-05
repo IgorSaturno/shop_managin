@@ -1,4 +1,4 @@
-import { createCategory } from "@/api/create-category";
+import { createBrand } from "@/api/create-brand";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,16 +19,16 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
-interface CategoryFormDialogProps {
+interface BrandFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
 }
 
-export function CategoryFormDialog({
+export function BrandCreateDialog({
   open,
   onOpenChange,
-}: CategoryFormDialogProps) {
+}: BrandFormDialogProps) {
   const queryClient = useQueryClient();
   const form = useForm({
     defaultValues: {
@@ -39,17 +39,17 @@ export function CategoryFormDialog({
   const onSubmit = async (value: { name: string }) => {
     try {
       if (!value.name.trim()) {
-        toast.warning("Digite um nome para a categoria");
+        toast.warning("Digite um nome para a marca");
         return;
       }
-      await createCategory(value.name);
-      await queryClient.invalidateQueries({ queryKey: ["categories"] });
+      await createBrand(value.name);
+      await queryClient.invalidateQueries({ queryKey: ["brands"] });
       form.reset();
       onOpenChange(false);
-      toast.success("Categoria criada com sucesso!");
+      toast.success("Marca criada com sucesso!");
     } catch (error) {
-      console.error("Erro ao criar categoria:", error);
-      toast.error("Erro ao criar categoria.");
+      console.error("Erro ao criar marca:", error);
+      toast.error("Erro ao criar marca.");
     }
   };
 
@@ -57,10 +57,8 @@ export function CategoryFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Criar Nova Categoria</DialogTitle>
-          <DialogDescription>
-            Digite o nome da nova categoria.
-          </DialogDescription>
+          <DialogTitle>Criar Nova Marca</DialogTitle>
+          <DialogDescription>Digite o nome da nova Marca.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -71,7 +69,7 @@ export function CategoryFormDialog({
                 <FormItem className="flex flex-col gap-2">
                   <FormLabel>Nome</FormLabel>
                   <FormControl>
-                    <Input placeholder="Nome da categoria" {...field} />
+                    <Input placeholder="Nome da marca" {...field} />
                   </FormControl>
                 </FormItem>
               )}
