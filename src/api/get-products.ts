@@ -7,7 +7,8 @@ export interface GetProductsQuery {
   status?: string | null;
   categoryId?: string | null;
   brandId?: string | null;
-  tags?: string | null;
+  tags?: string[] | null;
+  couponId?: string | null;
 }
 
 export interface GetProductsResponse {
@@ -15,11 +16,10 @@ export interface GetProductsResponse {
     productId: string;
     productName: string;
     priceInCents: number;
-    categoryId: string; // Alterado para ID
+    categoryIds: string[]; // Alterado para ID
     brandId: string; // Alterado para ID
-    tags: string;
+    tags: string[];
     stock: number;
-    sku: string;
     isFeatured: boolean;
     status: "available" | "unavailable" | "archived";
     createdAt: string;
@@ -46,16 +46,18 @@ export async function getProducts({
   categoryId,
   brandId,
   tags,
+  couponId,
 }: GetProductsQuery) {
   const response = await api.get<GetProductsResponse>("/products", {
     params: {
       productName,
       pageIndex,
       productId,
-      status: status !== "all" ? status : undefined,
-      categoryId: categoryId !== "all" ? categoryId : undefined, // Converte array para string separada por vírgulas
-      brandId: brandId !== "all" ? brandId : undefined,
-      tags: tags !== "all" ? tags : undefined,
+      status: status && status !== "all" ? status : undefined,
+      categoryId: categoryId && categoryId !== "all" ? categoryId : undefined, // Converte array para string separada por vírgulas
+      brandId: brandId && brandId !== "all" ? brandId : undefined,
+      tags: tags && tags.length > 0 ? tags.join(",") : undefined,
+      couponId: couponId && couponId !== "all" ? couponId : undefined,
     },
   });
 

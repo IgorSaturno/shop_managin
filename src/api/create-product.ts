@@ -1,11 +1,10 @@
 import { api } from "@/lib/axios";
 
 export interface CreateProductPayload {
-  name: string;
+  product_name: string;
   description: string;
   characteristics: string;
   priceInCents: number;
-  sku: string;
   stock: number;
   isFeatured: boolean;
   isArchived: boolean;
@@ -14,6 +13,8 @@ export interface CreateProductPayload {
   brandId: string;
   images: string[]; // array de URLs
   video?: string;
+  couponIds?: string[]; // array de IDs
+  tags?: string[]; // array de tags
 }
 
 export async function createProduct(payload: CreateProductPayload) {

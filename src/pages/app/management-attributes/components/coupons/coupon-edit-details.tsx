@@ -88,7 +88,7 @@ export function CouponEditDetails({
   } = useForm<CouponEditSchema>({
     resolver: zodResolver(couponEditSchema),
     defaultValues: {
-      id: coupon.id,
+      id: coupon.discount_coupon_id,
       code: coupon.code,
       discountType: coupon.discountType,
       discountValue: coupon.discountValue / 100,
@@ -164,7 +164,7 @@ export function CouponEditDetails({
         return;
       }
 
-      await updateCoupon(coupon.id, {
+      await updateCoupon(coupon.discount_coupon_id, {
         ...data,
         validFrom: data.validFrom.toISOString(),
         validUntil: data.validUntil.toISOString(),

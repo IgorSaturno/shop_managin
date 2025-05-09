@@ -59,7 +59,7 @@ export function AppSidebar() {
       <div className="flex h-full flex-col justify-between">
         <SidebarContent>
           <SidebarGroup>
-            <SidebarGroupLabel>Vibrante</SidebarGroupLabel>
+            <SidebarGroupLabel>Shop.Managin</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {items.map((item) => (

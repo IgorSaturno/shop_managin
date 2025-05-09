@@ -93,6 +93,7 @@ export function CouponCreateDialog({
         validFrom: values.validFrom.toISOString(),
         validUntil: values.validUntil.toISOString(),
         active: values.active,
+        discount_coupon_id: "",
       });
       queryClient.invalidateQueries({ queryKey: ["coupons"] });
       toast.success("Cupom criado!");

@@ -8,10 +8,10 @@ export interface GetProductDetailsResponse {
   productId: string;
   productName: string;
   description: string;
+  characteristics: string;
   priceInCents: number;
   stock: number;
-  sku: string;
-  categoryId: string;
+  categoryId: string[];
   brandId: string;
   tags: string[];
   status: "available" | "unavailable" | "archived";

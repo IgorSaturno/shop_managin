@@ -67,7 +67,9 @@ export function ProductTableFilters() {
       }),
   });
 
-  const { data: couponsResponse } = useQuery({
+  const { data: couponsResponse } = useQuery<
+    { value: string; label: string }[]
+  >({
     queryKey: ["coupons", { pageIndex: 0 }],
     queryFn: () =>
       getCoupons({ pageIndex: 0, status: "all" }).then((res) =>
