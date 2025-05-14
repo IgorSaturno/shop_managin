@@ -4,6 +4,11 @@ export interface GetProductDetailsParams {
   productId: string;
 }
 
+export interface ProductImage {
+  optimized: string;
+  thumbnail: string;
+}
+
 export interface GetProductDetailsResponse {
   productId: string;
   productName: string;
@@ -16,7 +21,7 @@ export interface GetProductDetailsResponse {
   tags: string[];
   status: "available" | "unavailable" | "archived";
   coupons: string[];
-  images: string[];
+  images: ProductImage[];
   createdAt: string;
 }
 

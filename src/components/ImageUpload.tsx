@@ -3,13 +3,20 @@ import { useDropzone } from "react-dropzone";
 import { UploadCloud, Trash } from "lucide-react";
 
 type ImageItem = {
-  url: string;
-  isNew: boolean;
+  file?: File;
+  original: string;
+  optimized: string;
+  thumbnail: string;
 };
 
 interface ImageUploadProps {
-  initialImages?: string[];
-  onImagesChange: (newImages: string[]) => void;
+  initialImages?: Array<{
+    original: string;
+    optimized: string;
+    thumbnail: string;
+  }>;
+  onImagesChange: (newImages: Array<ImageItem>) => void;
+  onFilesChange?: (files: File[]) => void;
   maxImages?: number;
   disabled?: boolean;
 }
@@ -17,108 +24,89 @@ interface ImageUploadProps {
 export function ImageUpload({
   initialImages = [],
   onImagesChange,
+  onFilesChange,
   maxImages = 4,
   disabled = false,
 }: ImageUploadProps) {
-  const [files, setFiles] = useState<ImageItem[]>(
-    initialImages.map((url) => ({ url, isNew: false })),
+  const [items, setItems] = useState<ImageItem[]>(
+    initialImages.map((img) => ({ ...img, file: undefined })),
   );
 
-  const dropzoneClasses = `border-2 border-dashed rounded-lg p-8 cursor-pointer ${
-    disabled ? "bg-gray-100" : "hover:border-primary"
-  } transition-colors`;
-
+  // Sincroniza previews iniciais
   useEffect(() => {
-    const current = JSON.stringify(files.map((f) => f.url));
-    const incoming = JSON.stringify(initialImages);
-
-    if (current !== incoming) {
-      setFiles(initialImages.map((url) => ({ url, isNew: false })));
-    }
+    setItems(initialImages.map((img) => ({ ...img, file: undefined })));
   }, [initialImages]);
 
+  const onDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      if (disabled) return;
+
+      // Gera preview
+      const newItems = acceptedFiles.map((file) => ({
+        file,
+
+        original: URL.createObjectURL(file),
+        optimized: URL.createObjectURL(file),
+        thumbnail: URL.createObjectURL(file),
+      }));
+
+      const updated = [...items, ...newItems].slice(0, maxImages);
+
+      setItems(updated);
+      onImagesChange(updated);
+      onFilesChange?.(updated.map((i) => i.file!).filter(Boolean));
+    },
+    [disabled, items, maxImages, onImagesChange, onFilesChange],
+  );
+
   const { getRootProps, getInputProps } = useDropzone({
-    onDrop: useCallback(
-      (acceptedFiles: File[]) => {
-        if (disabled) return;
-
-        const newItems = acceptedFiles.map((file) => ({
-          url: URL.createObjectURL(file),
-          isNew: true,
-        }));
-
-        setFiles((prev) => {
-          const updated = [...prev, ...newItems].slice(0, maxImages);
-          onImagesChange(updated.map((item) => item.url));
-          return updated;
-        });
-      },
-      [disabled, maxImages, onImagesChange],
-    ),
-    accept: { "image/*": [".jpeg", ".jpg", ".png", ".gif", ".svg"] },
+    onDrop,
+    accept: { "image/*": [] },
     disabled,
   });
 
-  useEffect(() => {
-    return () => {
-      files.forEach(({ url, isNew }) => {
-        if (isNew && url.startsWith("blob:")) URL.revokeObjectURL(url);
-      });
-    };
-  }, [files]);
-
   const handleRemove = useCallback(
     (index: number) => {
-      setFiles((prev) => {
-        const updated = prev.filter((_, i) => i !== index);
-        onImagesChange(updated.map((item) => item.url));
-        return updated;
-      });
+      const updated = items.filter((_, i) => i !== index);
+      setItems(updated);
+      onImagesChange(updated);
+      onFilesChange?.(updated.map((i) => i.file!).filter(Boolean) as File[]);
     },
-    [onImagesChange],
+    [items, onImagesChange, onFilesChange],
   );
 
   return (
     <div className="space-y-4">
-      <div {...getRootProps()} className={dropzoneClasses}>
-        <input {...getInputProps()} data-testid="file-input" />
+      <div
+        {...getRootProps()}
+        className="cursor-pointer rounded-lg border-2 border-dashed p-8 transition-colors hover:border-primary"
+      >
+        <input {...getInputProps()} />
         <div className="flex flex-col items-center gap-2">
-          <UploadCloud
-            className={`h-10 w-10 ${
-              disabled ? "text-gray-400" : "text-gray-600"
-            }`}
-          />
-          <p
-            className={`text-center ${disabled ? "text-gray-400" : "text-gray-600"}`}
-          >
+          <UploadCloud className="h-10 w-10 text-gray-600" />
+          <p className="text-center text-gray-600">
             Arraste imagens ou clique para selecionar
           </p>
-          <p className="text-sm text-gray-400">
-            Formatos suportados: JPEG, PNG, GIF, SVG
-          </p>
+          <p className="text-sm text-gray-400">JPEG, PNG, GIF, SVG</p>
         </div>
       </div>
-
       <div className="grid grid-cols-4 gap-4">
-        {files.map(({ url }, index) => (
-          <div key={url} className="group relative">
+        {items.map((item, idx) => (
+          <div key={idx} className="group relative">
             <img
-              src={url}
-              alt={`Pré-visualização ${index + 1}`}
+              src={item.thumbnail}
+              alt={`Preview ${idx + 1}`}
               className="h-32 w-full rounded-lg border object-cover"
             />
-
-            {!disabled && (
-              <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black bg-opacity-0 transition-all group-hover:bg-opacity-50">
-                <button
-                  type="button"
-                  onClick={() => handleRemove(index)}
-                  className="text-white opacity-0 transition-opacity group-hover:opacity-100"
-                >
-                  <Trash className="h-6 w-6" />
-                </button>
-              </div>
-            )}
+            <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black bg-opacity-0 transition-all group-hover:bg-opacity-50">
+              <button
+                type="button"
+                onClick={() => handleRemove(idx)}
+                className="text-white opacity-0 transition-opacity group-hover:opacity-100"
+              >
+                <Trash className="h-6 w-6" />
+              </button>
+            </div>
           </div>
         ))}
       </div>

@@ -28,7 +28,10 @@ export function ProductDetails({
   open,
   createdAt,
 }: ProductDetailsProps) {
-  const [selectedImage, setSelectedImage] = useState<string>(FALLBACK_IMAGE);
+  const [selectedImage, setSelectedImage] = useState<{
+    url: string;
+    type: "optimized" | "thumbnail";
+  }>({ url: FALLBACK_IMAGE, type: "optimized" });
 
   const { data: product } = useQuery({
     queryKey: ["product", productId, createdAt],
@@ -64,9 +67,12 @@ export function ProductDetails({
 
   useEffect(() => {
     if (product && product.images.length > 0) {
-      setSelectedImage(product.images[0]);
+      setSelectedImage({
+        url: product.images[0].optimized,
+        type: "optimized",
+      });
     } else {
-      setSelectedImage(FALLBACK_IMAGE);
+      setSelectedImage({ url: FALLBACK_IMAGE, type: "optimized" });
     }
   }, [product]);
 
@@ -81,7 +87,7 @@ export function ProductDetails({
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
           <div className="flex flex-col items-center">
             <img
-              src={selectedImage}
+              src={selectedImage.url}
               alt="Produto"
               className="h-64 w-64 rounded-md object-cover shadow-md"
               onError={(e) => {
@@ -95,14 +101,19 @@ export function ProductDetails({
               {product?.images.map((img, index) => (
                 <img
                   key={index}
-                  src={img}
+                  src={img.thumbnail}
                   alt={`Imagem ${index + 1}`}
                   className={`h-16 w-16 cursor-pointer rounded-md border-2 object-cover ${
-                    selectedImage === img
+                    selectedImage.url === img.optimized
                       ? "border-blue-500"
                       : "border-transparent"
                   }`}
-                  onClick={() => setSelectedImage(img)}
+                  onClick={() =>
+                    setSelectedImage({
+                      url: img.optimized,
+                      type: "optimized",
+                    })
+                  }
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
                     (e.target as HTMLImageElement).onerror = null;

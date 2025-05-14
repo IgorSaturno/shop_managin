@@ -1,5 +1,11 @@
 import { api } from "@/lib/axios";
 
+export interface ProductImage {
+  original: string;
+  optimized: string;
+  thumbnail: string;
+}
+
 export interface CreateProductPayload {
   product_name: string;
   description: string;
@@ -11,13 +17,25 @@ export interface CreateProductPayload {
   status: string;
   categoryId: string;
   brandId: string;
-  images: string[]; // array de URLs
+  images: ProductImage[]; // array de URLs
   video?: string;
   couponIds?: string[]; // array de IDs
   tags?: string[]; // array de tags
 }
 
 export async function createProduct(payload: CreateProductPayload) {
-  const response = await api.post("/products", payload);
-  return response.data;
+  try {
+    // Transforma o payload para formato seguro
+    const formatted = {
+      ...payload,
+      priceInCents: Number(payload.priceInCents),
+      stock: Number(payload.stock),
+    };
+
+    const response = await api.post("/products", formatted);
+    return response.data;
+  } catch (error) {
+    console.error("Erro na criação do produto:", error);
+    throw new Error("Falha ao criar produto");
+  }
 }

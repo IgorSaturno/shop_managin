@@ -33,6 +33,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { createProduct } from "@/api/create-product";
 import { Dialog } from "@radix-ui/react-dialog";
 import { ImageUpload } from "@/components/ImageUpload";
+import { uploadImage } from "@/api/upload-images";
+import { useState } from "react";
+import { api } from "@/lib/axios";
 
 interface productCreateDialogProps {
   open: boolean;
@@ -50,11 +53,21 @@ const productCreateSchema = z.object({
   categoryId: z.string().min(1, "Selecione uma categoria"),
   brandId: z.string().min(1, "Selecione uma marca"),
   tags: z.array(z.string()),
-  images: z.array(z.string()).max(4, "Máximo 4 imagens"),
+  images: z
+    .array(
+      z.object({
+        original: z.string(),
+        optimized: z.string(),
+        thumbnail: z.string(),
+      }),
+    )
+    .max(4, "Máximo 4 imagens"),
   couponIds: z.array(z.string()).optional(),
 });
 
-type ProductCreateForm = z.infer<typeof productCreateSchema>;
+type FormValues = z.infer<typeof productCreateSchema>;
+
+type ProductImage = FormValues["images"][number];
 
 export default function ProductCreateDialog({
   onSuccess,
@@ -62,6 +75,7 @@ export default function ProductCreateDialog({
   onOpenChange,
 }: productCreateDialogProps) {
   const queryClient = useQueryClient();
+  const [files, setFiles] = useState<File[]>([]);
 
   const { data: categoriesData } = useQuery<GetCategoryResponse>({
     queryKey: ["categories", { pageIndex: 0 }],
@@ -93,7 +107,7 @@ export default function ProductCreateDialog({
     handleSubmit,
     formState: { isSubmitting },
     reset,
-  } = useForm<ProductCreateForm>({
+  } = useForm<FormValues>({
     resolver: zodResolver(productCreateSchema),
     defaultValues: {
       product_name: "",
@@ -110,9 +124,10 @@ export default function ProductCreateDialog({
     },
   });
 
-  const onSubmit = async (data: ProductCreateForm) => {
+  const onSubmit = async (data: FormValues) => {
     try {
-      await createProduct({
+      // 1) Cria produto sem imagens
+      const { productId } = await createProduct({
         product_name: data.product_name,
         description: data.description,
         characteristics: data.characteristics || "",
@@ -124,14 +139,31 @@ export default function ProductCreateDialog({
         categoryId: data.categoryId,
         brandId: data.brandId,
         tags: data.tags,
-        images: data.images,
+        images: [], // inicialmente vazio
         couponIds: data.couponIds,
       });
+
+      // 2) Upload de imagens, se existirem arquivos
+      let imagesToSave: ProductImage[] = [];
+      if (files.length > 0) {
+        const uploaded = await Promise.all(
+          files.map((file) => uploadImage(file, productId)),
+        );
+        // extrai apenas URLs para salvar
+        imagesToSave = uploaded.map((u) => u.urls);
+
+        // 3) Atualiza produto com URLs das imagens
+        await api.patch(`/products/${productId}/images`, {
+          images: imagesToSave,
+        });
+      }
+
       toast.success("Produto criado com sucesso!");
       reset();
       queryClient.invalidateQueries({ queryKey: ["products"] });
       onSuccess();
     } catch (error: any) {
+      console.error("Erro no onSubmit:", error);
       toast.error(error.message || "Erro ao criar produto");
     }
   };
@@ -534,8 +566,28 @@ export default function ProductCreateDialog({
               <div>
                 <Label>Imagens</Label>
                 <ImageUpload
-                  initialImages={field.value}
-                  onImagesChange={field.onChange}
+                  initialImages={field.value.map((img) => ({
+                    original: img.original,
+                    optimized: img.optimized,
+                    thumbnail: img.thumbnail,
+                  }))}
+                  onImagesChange={(images) => {
+                    // Atualiza apenas URLs no formulário
+                    field.onChange(
+                      images.map((img) => ({
+                        original: img.original,
+                        optimized: img.optimized,
+                        thumbnail: img.thumbnail,
+                      })),
+                    );
+
+                    // Atualiza arquivos apenas para novos uploads
+                    setFiles(
+                      images
+                        .map((img) => img.file)
+                        .filter((file): file is File => !!file),
+                    );
+                  }}
                   maxImages={4}
                 />
                 {fieldState.error && (
