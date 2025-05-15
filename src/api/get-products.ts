@@ -18,17 +18,20 @@ export interface GetProductsResponse {
     priceInCents: number;
     categoryIds: string[]; // Alterado para ID
     brandId: string; // Alterado para ID
-    tags: string[];
+    tags: Array<{ id: string; name: string }>;
     stock: number;
     isFeatured: boolean;
+    isArchived: boolean;
     status: "available" | "unavailable" | "archived";
     createdAt: string;
     description: string;
     coupons: Array<{
+      couponId: string;
       code: string;
       discountType: "percentage" | "fixed";
       discountValue: number;
     }>;
+    couponIds: string[];
     images: string[];
   }[];
   meta: {

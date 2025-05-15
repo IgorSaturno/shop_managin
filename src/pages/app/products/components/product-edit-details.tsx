@@ -20,28 +20,38 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
 import { updateProduct } from "@/api/update-product";
-import { MultiSelect } from "@/components/Multi-select";
+
 import { useQuery } from "@tanstack/react-query";
 import { getCategories } from "@/api/get-categories";
 import { getBrands } from "@/api/get-brands";
-import { getTags } from "@/api/get-tags";
+import { getTags, GetTagsResponse } from "@/api/get-tags";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { getCoupons } from "@/api/get-coupons";
+import ReactSelect, { MultiValue } from "react-select";
 
-interface ProductEditDetailsProps {
-  product: {
-    productId: string;
-    productName: string;
-    description: string;
-    price: number;
-    status: "available" | "unavailable" | "archived";
-    stock: number;
-    categoryId: string;
-    brandId: string;
-    tags?: string[];
-    images: string[];
-  };
+import { useEffect } from "react";
+
+export interface RowProduct {
+  productId: string;
+  productName: string;
+  description?: string;
+  characteristics?: string;
+  priceInCents: number;
+  status: "available" | "unavailable" | "archived";
+  stock: number;
+  categoryIds: string[]; // note que aqui é array
+  brandId: string;
+  tags?: Array<{ id: string; name: string }>;
+  images: string[]; // só URLs planas
+  couponIds?: string[];
+  isFeatured: boolean;
+  isArchived: boolean;
+}
+
+export interface ProductEditDetailsProps {
+  product: RowProduct;
   onClose: () => void;
   refresh: () => void;
 }
@@ -50,13 +60,25 @@ const productEditSchema = z.object({
   productId: z.string(),
   productName: z.string().min(1, "Nome é obrigatório"),
   description: z.string().optional(),
-  price: z.number().min(0.01, "Preço inválido"),
+  characteristics: z.string().optional(),
+  priceInCents: z.number().min(0.01, "Preço inválido"),
   stock: z.number().min(0, "Estoque inválido"),
   status: z.enum(["available", "unavailable", "archived"]),
   categoryId: z.string().min(1, "Selecione uma categoria"),
   brandId: z.string().min(1, "Selecione uma marca"),
   tags: z.array(z.string()),
-  images: z.array(z.string()),
+  images: z
+    .array(
+      z.object({
+        original: z.string(),
+        optimized: z.string(),
+        thumbnail: z.string(),
+      }),
+    )
+    .max(4, "Máximo 4 imagens"),
+  couponIds: z.array(z.string()).optional(),
+  isFeatured: z.boolean(),
+  isArchived: z.boolean(),
 });
 
 type ProductEditSchema = z.infer<typeof productEditSchema>;
@@ -66,77 +88,137 @@ export default function ProductEditDetails({
   onClose,
   refresh,
 }: ProductEditDetailsProps) {
+  const form = useForm<ProductEditSchema>({
+    resolver: zodResolver(productEditSchema),
+    defaultValues: {} as any,
+  });
+
   const {
     control,
     handleSubmit,
+    reset,
     formState: { isSubmitting },
-  } = useForm<ProductEditSchema>({
-    resolver: zodResolver(productEditSchema),
-    defaultValues: {
+  } = form;
+
+  useEffect(() => {
+    console.log("couponIds", product.couponIds);
+    reset({
       productId: product.productId,
       productName: product.productName,
       description: product.description,
-      price: product.price,
+      characteristics: product.characteristics,
+      priceInCents: product.priceInCents / 100,
       stock: product.stock,
       status: product.status,
-      categoryId: product.categoryId,
+      categoryId: product.categoryIds[0] ?? "",
       brandId: product.brandId,
-      tags: product.tags || [],
-      images: product.images,
-    },
-  });
+      tags: product.tags?.map((t) => t.id) || [],
+      couponIds: product.couponIds || [],
+      images: (product.images || []).map((url) => ({
+        original: url,
+        optimized: url,
+        thumbnail: url,
+      })),
+      isFeatured: product.isFeatured,
+      isArchived: product.isArchived,
+    });
+  }, [product, reset]);
 
   const { data: categoriesOptionsUpdate } = useQuery({
-    queryKey: ["categoriesupdate"],
-    queryFn: async () => {
-      const data = await getCategories();
-      return data.map((category, index) => ({
-        value: category.category_id,
-        label: category.category_name,
-        key: `category-${category.category_id}-${index}`,
-      }));
-    },
+    queryKey: ["categories", "edit"],
+    queryFn: () =>
+      getCategories({ pageIndex: 0, categoryId: null, categoryName: null }),
   });
-
   const { data: brandsOptionsUpdate } = useQuery({
-    queryKey: ["brandsupdate"],
-    queryFn: async () => {
-      const data = await getBrands();
-      return data.map((brand, index) => ({
-        value: brand.brand_id,
-        label: brand.brand_name,
-        key: `brand-${brand.brand_id}-${index}`,
-      }));
-    },
+    queryKey: ["brands", "edit"],
+    queryFn: () => getBrands({ pageIndex: 0, brandId: null, brandName: null }),
+  });
+  const { data: tagsOptionsUpdate } = useQuery<GetTagsResponse>({
+    queryKey: ["tags", "edit"],
+    queryFn: () => getTags({ pageIndex: 0, tagId: null, tagName: null }),
+  });
+  const { data: couponOptionsUpdate } = useQuery({
+    queryKey: ["coupons", "edit"],
+    queryFn: () =>
+      getCoupons({ pageIndex: 0, status: "all" }).then((res) =>
+        res.coupons.map((c) => ({
+          value: c.discount_coupon_id,
+          label: c.code,
+        })),
+      ),
   });
 
-  const { data: tagsOptionsUpdate } = useQuery({
-    queryKey: ["tagsupdate"],
-    queryFn: async () => {
-      const data = await getTags();
-      return data.map((tag, index) => ({
-        value: tag.tag_id,
-        label: tag.tag_name,
-        key: `tag-${tag.tag_id}-${index}`,
-      }));
-    },
-  });
-
-  // 5. Validação de campos
-
-  // 6. Lógica de salvamento
   const handleSave = async (data: ProductEditSchema) => {
     try {
       await updateProduct({
-        ...data,
-        priceInCents: Math.round(data.price * 100), // Converter para centavos
+        productId: data.productId,
+        product_name: data.productName,
+        description: data.description,
+        characteristics: data.characteristics,
+        priceInCents: Math.round(data.priceInCents * 100), // converte para centavos
+        stock: data.stock,
+        status: data.status,
+        categoryId: data.categoryId,
+        brandId: data.brandId,
+        tags: data.tags,
+        images: data.images,
+        couponIds: data.couponIds ?? [],
+        isFeatured: data.isFeatured,
+        isArchived: data.isArchived,
       });
-      refresh();
+
       toast.success("Produto atualizado!");
+      refresh();
       onClose();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao atualizar");
     }
+  };
+
+  const selectStyles = {
+    control: (base: any, state: any) => ({
+      ...base,
+      background: "var(--background)",
+      borderRadius: 4,
+      borderColor: state.isFocused ? "#6366F1" : "none",
+      boxShadow: state.isFocused ? "0 0 0 1px #6366F1" : undefined,
+      "&:hover": { borderColor: "#6366F1" },
+      padding: 2,
+    }),
+    menu: (base: any) => ({
+      ...base,
+      backgroundColor: "#030712", // Tailwind bg-gray-800
+      color: "#F9FAFB", // Tailwind text-gray-100
+      borderRadius: 4,
+      border: "1px solid #2f3238", // Tailwind border-gray-600
+      marginTop: 4,
+      zIndex: 10,
+    }),
+    option: (base: any, { isFocused, isSelected }: any) => ({
+      ...base,
+      backgroundColor: isSelected
+        ? "#6366F1" // Tailwind indigo-500
+        : isFocused
+          ? "#4F46E5" // Tailwind indigo-600
+          : "transparent",
+      color: isSelected || isFocused ? "#FFFFFF" : "#F9FAFB",
+      cursor: "pointer",
+    }),
+    multiValue: (base: any) => ({
+      ...base,
+      backgroundColor: "#E0E7FF",
+      borderRadius: 3,
+    }),
+    multiValueLabel: (base: any) => ({
+      ...base,
+      color: "#4338CA",
+      fontWeight: 500,
+    }),
+    multiValueRemove: (base: any) => ({
+      ...base,
+      color: "#4338CA",
+      ":hover": { backgroundColor: "#C7D2FE", color: "#312E81" },
+    }),
   };
 
   return (
@@ -155,10 +237,13 @@ export default function ProductEditDetails({
           <Controller
             name="productName"
             control={control}
-            render={({ field }) => (
+            render={({ field, fieldState }) => (
               <div className="space-y-1">
                 <Label htmlFor="productName">Nome do Produto</Label>
                 <Input id="productName" {...field} />
+                {fieldState.error && (
+                  <p className="text-red-500">{fieldState.error.message}</p>
+                )}
               </div>
             )}
           />
@@ -166,27 +251,45 @@ export default function ProductEditDetails({
           {/* Preço e Estoque */}
           <div className="grid grid-cols-2 gap-4">
             <Controller
-              name="price"
+              name="priceInCents"
               control={control}
-              render={({ field }) => (
-                <div className="space-y-1">
-                  <Label htmlFor="price">Preço (R$)</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    {...field}
-                    onChange={(e) => field.onChange(Number(e.target.value))}
-                  />
-                </div>
-              )}
+              render={({ field, fieldState }) => {
+                // converte o valor numérico para string formatada em R$
+                const display = field.value.toLocaleString("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                });
+
+                return (
+                  <div>
+                    <div className="mb-1">
+                      <Label>Preço (R$)</Label>
+                    </div>
+                    <Input
+                      value={display}
+                      onChange={(e) => {
+                        // remove tudo que não é dígito ou vírgula
+                        const cleaned = e.target.value.replace(/[^\d,]/g, "");
+                        // substitui vírgula por ponto e converte pra float
+                        const asNumber = parseFloat(cleaned.replace(",", "."));
+                        // joga o número “puro” de volta pro formulário
+                        field.onChange(isNaN(asNumber) ? 0 : asNumber);
+                      }}
+                    />
+                    {fieldState.error && (
+                      <p className="text-sm text-red-500">
+                        {fieldState.error.message}
+                      </p>
+                    )}
+                  </div>
+                );
+              }}
             />
 
             <Controller
               name="stock"
               control={control}
-              render={({ field }) => (
+              render={({ field, fieldState }) => (
                 <div className="space-y-1">
                   <Label htmlFor="stock">Estoque</Label>
                   <Input
@@ -196,6 +299,9 @@ export default function ProductEditDetails({
                     {...field}
                     onChange={(e) => field.onChange(Number(e.target.value))}
                   />
+                  {fieldState.error && (
+                    <p className="text-red-500">{fieldState.error.message}</p>
+                  )}
                 </div>
               )}
             />
@@ -235,9 +341,12 @@ export default function ProductEditDetails({
                       <SelectValue placeholder="Selecione a categoria" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categoriesOptionsUpdate?.map((category) => (
-                        <SelectItem key={category.value} value={category.value}>
-                          {category.label}
+                      {categoriesOptionsUpdate?.categories.map((category) => (
+                        <SelectItem
+                          key={category.category_id}
+                          value={category.category_id}
+                        >
+                          {category.category_name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -261,9 +370,9 @@ export default function ProductEditDetails({
                       <SelectValue placeholder="Selecione a marca" />
                     </SelectTrigger>
                     <SelectContent>
-                      {brandsOptionsUpdate?.map((brand) => (
-                        <SelectItem key={brand.value} value={brand.value}>
-                          {brand.label}
+                      {brandsOptionsUpdate?.brands.map((brand) => (
+                        <SelectItem key={brand.brand_id} value={brand.brand_id}>
+                          {brand.brand_name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -278,27 +387,73 @@ export default function ProductEditDetails({
             />
           </div>
 
-          {/* Tags */}
-          <Controller
-            name="tags"
-            control={control}
-            render={({ field, fieldState }) => (
-              <div className="space-y-2">
-                <Label>Tags</Label>
-                <MultiSelect
-                  options={tagsOptionsUpdate || []}
-                  selectedValues={field.value}
-                  onChange={field.onChange}
-                  placeholder="Selecione as tags..."
-                />
-                {fieldState.error && (
-                  <p className="text-sm text-red-500">
-                    {fieldState.error.message}
-                  </p>
-                )}
-              </div>
-            )}
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <Controller
+              name="tags"
+              control={control}
+              render={({ field, fieldState }) => {
+                // 1) monta as opções no formato { value, label }
+                const tagOptions =
+                  tagsOptionsUpdate?.tags.map((t) => ({
+                    value: t.tag_id,
+                    label: t.tag_name,
+                  })) ?? [];
+
+                // 2) filtra só as opções que já estão selecionadas
+                const selectedTags = tagOptions.filter((opt) =>
+                  field.value.includes(opt.value),
+                );
+
+                return (
+                  <div>
+                    <Label>Tags</Label>
+                    <ReactSelect<{ value: string; label: string }, true>
+                      isMulti
+                      options={tagOptions}
+                      value={selectedTags}
+                      onChange={(
+                        selected: MultiValue<{ value: string; label: string }>,
+                      ) => field.onChange(selected.map((s) => s.value))}
+                      placeholder="Selecione tags"
+                      styles={selectStyles}
+                    />
+                    {fieldState.error && (
+                      <p className="text-sm text-red-500">
+                        {fieldState.error.message}
+                      </p>
+                    )}
+                  </div>
+                );
+              }}
+            />
+
+            <Controller
+              name="couponIds"
+              control={control}
+              render={({ field }) => {
+                const couponOptions = couponOptionsUpdate ?? [];
+                const selectedCoupons = couponOptions.filter((opt) =>
+                  field.value?.includes(opt.value),
+                );
+
+                return (
+                  <div>
+                    <Label>Cupons</Label>
+                    <ReactSelect<{ value: string; label: string }, true>
+                      isMulti
+                      options={couponOptions}
+                      value={selectedCoupons}
+                      onChange={(
+                        selected: MultiValue<{ value: string; label: string }>,
+                      ) => field.onChange(selected.map((s) => s.value))}
+                      placeholder="Selecione cupons"
+                      styles={selectStyles}
+                    />
+                  </div>
+                );
+              }}
+            />
+          </div>
 
           {/* Descrição */}
           <Controller
@@ -309,6 +464,26 @@ export default function ProductEditDetails({
                 <Label htmlFor="productDescription">Descrição</Label>
                 <Textarea
                   id="productDescription"
+                  {...field}
+                  className="min-h-[100px]"
+                />
+                {fieldState.error && (
+                  <p className="text-sm text-red-500">
+                    {fieldState.error.message}
+                  </p>
+                )}
+              </div>
+            )}
+          />
+
+          <Controller
+            name="characteristics"
+            control={control}
+            render={({ field, fieldState }) => (
+              <div className="space-y-1">
+                <Label htmlFor="productCharacteristics">Caracteristicas</Label>
+                <Textarea
+                  id="productCharacteristics"
                   {...field}
                   className="min-h-[100px]"
                 />

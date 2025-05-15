@@ -9,7 +9,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { TableCell, TableRow } from "@/components/ui/table";
-import { Search, Trash } from "lucide-react";
+import { Pencil, Search, Trash } from "lucide-react";
 import { ProductDetails } from "./product-details";
 import { useState } from "react";
 import { showToast } from "@/components/toast";
@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { calculateDiscountedPrice } from "@/lib/utils";
 import { Category } from "@/api/get-categories";
 import { Brand } from "@/api/get-brands";
+import ProductEditDetails from "./product-edit-details";
 
 interface ProductTableRowProps {
   product: {
@@ -28,9 +29,10 @@ interface ProductTableRowProps {
     status: "available" | "unavailable" | "archived";
     stock: number;
     isFeatured: boolean;
+    isArchived: boolean;
     categoryIds: string[]; // já é array
     brandId: string;
-    tags?: string[];
+    tags?: Array<{ id: string; name: string }>;
     coupons: Array<{
       code: string;
       discountType: "percentage" | "fixed";
@@ -50,6 +52,7 @@ export function ProductTableRow({
   brands,
 }: ProductTableRowProps) {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isEditDetailsOpen, setIsEditDetailsOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   const categoryNames =
@@ -140,7 +143,7 @@ export function ProductTableRow({
               key={`${product.productId}-${tag}-${i}`}
               className="rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800"
             >
-              {tag}
+              {tag.name}
             </span>
           ))}
         </div>
@@ -204,6 +207,21 @@ export function ProductTableRow({
           />
           <span>{product.status}</span>
         </div>
+      </TableCell>
+
+      <TableCell>
+        <Dialog open={isEditDetailsOpen} onOpenChange={setIsEditDetailsOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="xs">
+              <Pencil /> Editar
+            </Button>
+          </DialogTrigger>
+          <ProductEditDetails
+            product={product}
+            onClose={() => setIsEditDetailsOpen(false)}
+            refresh={refresh}
+          />
+        </Dialog>
       </TableCell>
 
       {/* Remover */}

@@ -331,7 +331,7 @@ export default function ProductCreateDialog({
                 return (
                   <div>
                     <div className="mb-1">
-                      <Label>Preço (centavos)</Label>
+                      <Label>Preço (R$)</Label>
                     </div>
                     <Input
                       value={display}

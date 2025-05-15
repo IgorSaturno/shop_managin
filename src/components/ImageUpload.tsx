@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { UploadCloud, Trash } from "lucide-react";
 
-type ImageItem = {
+export type ImageItem = {
+  id?: string;
   file?: File;
   original: string;
   optimized: string;

@@ -143,15 +143,17 @@ export default function Products() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {result?.products.map((product) => (
-                  <ProductTableRow
-                    key={product.productId}
-                    product={product}
-                    categories={categoriesData?.categories || []}
-                    brands={brandsData?.brands || []}
-                    refresh={refresh}
-                  />
-                ))}
+                {result?.products.map((product) => {
+                  return (
+                    <ProductTableRow
+                      key={product.productId}
+                      product={product}
+                      categories={categoriesData?.categories || []}
+                      brands={brandsData?.brands || []}
+                      refresh={refresh}
+                    />
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
